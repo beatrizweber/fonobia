@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acessar EscutaBem</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script>
+        tailwind.config = {
+            darkMode: ["class"],
+            theme: {
+                extend: {
+                    colors: {
+                        border: "hsl(var(--border))",
+                        input: "hsl(var(--input))",
+                        ring: "hsl(var(--ring))",
+                        background: "hsl(var(--background))",
+                        foreground: "hsl(var(--foreground))",
+                        primary: {
+                            DEFAULT: "hsl(var(--primary))",
+                            foreground: "hsl(var(--primary-foreground))",
+                            soft: "hsl(var(--primary) / 0.1)",
+                        },
+                        secondary: {
+                            DEFAULT: "hsl(var(--secondary))",
+                            foreground: "hsl(var(--secondary-foreground))",
+                        },
+                        muted: {
+                            DEFAULT: "hsl(var(--muted))",
+                            foreground: "hsl(var(--muted-foreground))",
+                        },
+                        accent: {
+                            DEFAULT: "hsl(var(--accent))",
+                            foreground: "hsl(var(--accent-foreground))",
+                        },
+                        card: {
+                            DEFAULT: "hsl(var(--card))",
+                            foreground: "hsl(var(--card-foreground))",
+                        },
+                    },
+                    borderRadius: {
+                        lg: "var(--radius)",
+                        md: "calc(var(--radius) - 2px)",
+                        sm: "calc(var(--radius) - 4px)",
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer base {
+            :root {
+                --background: 0 0% 100%;
+                --foreground: 222.2 84% 4.9%;
+                --card: 0 0% 100%;
+                --card-foreground: 222.2 84% 4.9%;
+                --primary: 173.3 50.9% 41.6%; /* Verde principal #34a094 */
+                --primary-foreground: 210 40% 98%;
+                --secondary: 210 40% 96.1%;
+                --secondary-foreground: 222.2 47.4% 11.2%;
+                --muted: 210 40% 96.1%;
+                --muted-foreground: 215.4 16.3% 46.9%;
+                --accent: 210 40% 96.1%;
+                --accent-foreground: 222.2 47.4% 11.2%;
+                --border: 214.3 31.8% 91.4%;
+                --input: 214.3 31.8% 91.4%;
+                --ring: 173.3 50.9% 41.6%;
+                --radius: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body class="bg-background text-foreground antialiased font-sans">
+    <div class="flex min-h-screen flex-col">
+        <header class="sticky top-0 z-40 w-full border-b border-border bg-background/95 backdrop-blur">
+            <div class="container mx-auto flex h-20 max-w-6xl items-center justify-between px-4">
+                <a href="tela1.html" class="flex items-center gap-3 text-2xl font-extrabold text-primary">
+                    <span class="grid h-12 w-12 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-md">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-7 w-7"><path d="M6 8.5a6.5 6.5 0 1 1 13 0c0 6-6 6-6 10a3.5 3.5 0 1 1-7 0"></path><path d="M15 8.5a2.5 2.5 0 0 0-5 0v1a2 2 0 1 1 0 4"></path></svg>
+                    </span>
+                    <span>EscutaBem</span>
+                </a>
+                
+                <nav class="hidden items-center gap-1 md:flex">
+                    <a href="tela2.html" class="flex items-center gap-2 rounded-lg px-4 py-2.5 text-base font-semibold text-foreground/80 hover:bg-accent hover:text-accent-foreground">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><path d="M12 7v14"></path><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"></path></svg>
+                        <span>Dúvidas</span>
+                    </a>
+                    <a href="tela3.html" class="flex items-center gap-2 rounded-lg px-4 py-2.5 text-base font-semibold text-foreground/80 hover:bg-accent hover:text-accent-foreground">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719"></path></svg>
+                        <span>Chat</span>
+                    </a>
+                    <a href="tela1.html" class="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-colors bg-primary text-primary-foreground shadow hover:bg-primary/90 h-10 rounded-md px-8 text-base">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 h-5 w-5"><path d="m10 17 5-5-5-5"></path><path d="M15 12H3"></path><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path></svg>
+                        Entrar
+                    </a>
+                </nav>
+            </div>
+        </header>
+
+        <main class="flex-1">
+            <div class="container mx-auto max-w-md px-4 py-12">
+                
+                <div class="mb-6 text-center">
+                    <div class="mx-auto mb-3 grid h-16 w-16 place-items-center rounded-2xl bg-primary text-primary-foreground">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-8 w-8"><path d="m10 17 5-5-5-5"></path><path d="M15 12H3"></path><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path></svg>
+                    </div>
+                    <h1 class="text-3xl font-extrabold text-foreground">Acessar EscutaBem</h1>
+                    <p class="mt-2 text-base text-muted-foreground">Entre como paciente ou fonoaudiólogo(a).</p>
+                </div>
+
+                <div class="rounded-xl border border-border bg-card text-card-foreground shadow p-6">
+                    <div class="items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground grid w-full grid-cols-2 h-12 mb-4">
+                        <button type="button" id="tab-login" class="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring text-base data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow" data-state="inactive" onclick="switchTab('login')">
+                            Entrar
+                        </button>
+                        <button type="button" id="tab-cadastro" class="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring text-base data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow" data-state="active" onclick="switchTab('cadastro')">
+                            Criar conta
+                        </button>
+                    </div>
+
+                    <div id="content-login" hidden>
+                        <form class="space-y-4 pt-2" onsubmit="event.preventDefault();">
+                            <div class="space-y-2">
+                                <label class="text-base font-semibold" for="l-email">Email</label>
+                                <input class="flex w-full rounded-md border border-input bg-transparent px-3 py-1 shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring h-12 text-base" id="l-email" required type="email" placeholder="seu@email.com">
+                            </div>
+                            <div class="space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <label class="text-base font-semibold" for="l-senha">Senha</label>
+                                    <a href="#" class="text-sm font-medium text-primary hover:underline">Esqueceu a senha?</a>
+                                </div>
+                                <input class="flex w-full rounded-md border border-input bg-transparent px-3 py-1 shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring h-12 text-base" id="l-senha" required type="password" placeholder="••••••••">
+                            </div>
+                            <button class="inline-flex items-center justify-center gap-2 whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring bg-primary text-primary-foreground shadow hover:bg-primary/90 rounded-md px-8 h-14 w-full text-lg font-bold mt-2" type="submit">
+                                Entrar
+                            </button>
+                        </form>
+                    </div>
+
+                    <div id="content-cadastro">
+                        <form class="space-y-4 pt-2" onsubmit="event.preventDefault();">
+                            <div class="space-y-2">
+                                <label class="text-base font-semibold">Eu sou</label>
+                                <div class="grid grid-cols-1 gap-2">
+                                    <label id="label-paciente" class="flex cursor-pointer items-start gap-3 rounded-lg border-2 p-3 border-primary bg-primary-soft/50" onclick="selectRole('paciente')">
+                                        <div class="aspect-square h-4 w-4 rounded-full border border-primary text-primary shadow flex items-center justify-center mt-1">
+                                            <svg id="icon-paciente" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5 fill-primary"><circle cx="12" cy="12" r="10"></circle></svg>
+                                        </div>
+                                        <input type="radio" name="role" value="paciente" class="hidden" checked>
+                                        <div>
+                                            <div class="flex items-center gap-2 text-base font-semibold">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> 
+                                                Paciente / usuário(a)
+                                            </div>
+                                            <p class="text-sm text-muted-foreground">Tire dúvidas e envie perguntas para fonoaudiólogos.</p>
+                                        </div>
+                                    </label>
+
+                                    <label id="label-fono" class="flex cursor-pointer items-start gap-3 rounded-lg border-2 p-3 border-border hover:border-primary/50 transition-colors" onclick="selectRole('fonoaudiologo')">
+                                        <div class="aspect-square h-4 w-4 rounded-full border border-primary text-primary shadow flex items-center justify-center mt-1">
+                                            <svg id="icon-fono" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5 fill-primary hidden"><circle cx="12" cy="12" r="10"></circle></svg>
+                                        </div>
+                                        <input type="radio" name="role" value="fonoaudiologo" class="hidden">
+                                        <div>
+                                            <div class="flex items-center gap-2 text-base font-semibold">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4"><path d="M11 2v2"></path><path d="M5 2v2"></path><path d="M5 3H4a2 2 0 0 0-2 2v4a6 6 0 0 0 12 0V5a2 2 0 0 0-2-2h-1"></path><path d="M8 15a6 6 0 0 0 12 0v-3"></path><circle cx="20" cy="10" r="2"></circle></svg> 
+                                                Fonoaudiólogo(a) voluntário(a)
+                                            </div>
+                                            <p class="text-sm text-muted-foreground">Responda perguntas e edite a biblioteca. Sujeito a aprovação.</p>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="space-y-2">
+                                <label class="text-base font-semibold" for="c-nome">Seu nome completo</label>
+                                <input class="flex w-full rounded-md border border-input bg-transparent px-3 py-1 shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring h-12 text-base" id="c-nome" required>
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-base font-semibold" for="c-email">Email</label>
+                                <input class="flex w-full rounded-md border border-input bg-transparent px-3 py-1 shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring h-12 text-base" id="c-email" required type="email">
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-base font-semibold" for="c-senha">Senha (mínimo 6 letras)</label>
+                                <input class="flex w-full rounded-md border border-input bg-transparent px-3 py-1 shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring h-12 text-base" id="c-senha" required minlength="6" type="password">
+                            </div>
+                            <button class="inline-flex items-center justify-center gap-2 whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring bg-primary text-primary-foreground shadow hover:bg-primary/90 rounded-md px-8 h-14 w-full text-lg font-bold mt-2" type="submit">
+                                Criar conta
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <p class="mt-6 text-center text-base text-muted-foreground">
+                    Sem cadastro? <a href="tela3.html" class="font-semibold text-primary hover:underline">Use o chat com IA</a>.
+                </p>
+            </div>
+        </main>
+
+        <footer class="mt-16 border-t border-border bg-secondary/40">
+            <div class="container mx-auto max-w-6xl px-4 py-10 text-center text-base text-muted-foreground">
+                <p class="font-semibold text-foreground">EscutaBem</p>
+                <p class="mt-2">Apoio para quem usa aparelho auditivo do SUS.</p>
+                <p class="mt-3">
+                    <a href="tela4.html" class="font-semibold text-primary hover:underline">É fonoaudiólogo(a) ou estagiário(a)? Seja voluntário</a>
+                </p>
+                <p class="mt-3 text-sm">As respostas deste site não substituem consulta com fonoaudiólogo. Em emergências, procure uma unidade de saúde.</p>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // Função para alternar entre as abas Entrar e Criar Conta
+        function switchTab(tabName) {
+            const tabLogin = document.getElementById('tab-login');
+            const tabCadastro = document.getElementById('tab-cadastro');
+            const contentLogin = document.getElementById('content-login');
+            const contentCadastro = document.getElementById('content-cadastro');
+
+            if (tabName === 'login') {
+                tabLogin.setAttribute('data-state', 'active');
+                tabCadastro.setAttribute('data-state', 'inactive');
+                contentLogin.hidden = false;
+                contentCadastro.hidden = true;
+            } else {
+                tabLogin.setAttribute('data-state', 'inactive');
+                tabCadastro.setAttribute('data-state', 'active');
+                contentLogin.hidden = true;
+                contentCadastro.hidden = false;
+            }
+        }
+
+        // Função para simular o estilo visual dos Radio Buttons personalizados
+        function selectRole(role) {
+            const labelPaciente = document.getElementById('label-paciente');
+            const iconPaciente = document.getElementById('icon-paciente');
+            
+            const labelFono = document.getElementById('label-fono');
+            const iconFono = document.getElementById('icon-fono');
+
+            // Resetar classes
+            labelPaciente.className = "flex cursor-pointer items-start gap-3 rounded-lg border-2 p-3 border-border hover:border-primary/50 transition-colors";
+            labelFono.className = "flex cursor-pointer items-start gap-3 rounded-lg border-2 p-3 border-border hover:border-primary/50 transition-colors";
+            iconPaciente.classList.add('hidden');
+            iconFono.classList.add('hidden');
+
+            // Ativar a selecionada
+            if (role === 'paciente') {
+                labelPaciente.className = "flex cursor-pointer items-start gap-3 rounded-lg border-2 p-3 border-primary bg-primary-soft/50";
+                iconPaciente.classList.remove('hidden');
+            } else {
+                labelFono.className = "flex cursor-pointer items-start gap-3 rounded-lg border-2 p-3 border-primary bg-primary-soft/50";
+                iconFono.classList.remove('hidden');
+            }
+        }
+
+        // Persistência e autenticação simples usando localStorage
+        function saveTabState(tabName) {
+            localStorage.setItem('lastTab', tabName);
+        }
+
+        function restoreTabState() {
+            const last = localStorage.getItem('lastTab') || 'cadastro';
+            switchTab(last);
+        }
+
+        // Simple registration: stores user object in localStorage
+        function registerUser() {
+            // form uses ids: c-nome, c-email, c-senha and radio name "role"
+            const name = document.getElementById('c-nome')?.value || '';
+            const email = document.getElementById('c-email')?.value || '';
+            const senha = document.getElementById('c-senha')?.value || '';
+            const role = document.querySelector('input[name="role"]:checked')?.value || 'paciente';
+
+            if (!email || !senha) {
+                alert('Por favor preencha email e senha.');
+                return;
+            }
+
+            const user = { name, email, role };
+            localStorage.setItem('escutabem_user', JSON.stringify(user));
+            localStorage.setItem('escutabem_authed', '1');
+            saveTabState('login');
+            // Redirect to chat (tela3)
+            window.location.href = 'tela3.html';
+        }
+
+        // Simple login: checks localStorage user (no real password check)
+        function loginUser() {
+            const email = document.getElementById('l-email')?.value || '';
+            const senha = document.getElementById('l-senha')?.value || '';
+
+            if (!email || !senha) {
+                alert('Preencha email e senha.');
+                return;
+            }
+
+            const stored = JSON.parse(localStorage.getItem('escutabem_user') || 'null');
+            if (stored && stored.email === email) {
+                localStorage.setItem('escutabem_authed', '1');
+                window.location.href = 'tela3.html';
+            } else {
+                // If no stored user, create a minimal one
+                const user = { name: '', email, role: 'paciente' };
+                localStorage.setItem('escutabem_user', JSON.stringify(user));
+                localStorage.setItem('escutabem_authed', '1');
+                window.location.href = 'tela3.html';
+            }
+        }
+
+        // Initialize UI bindings after DOM ready
+        document.addEventListener('DOMContentLoaded', function () {
+            // Restore last tab
+            restoreTabState();
+
+            // wire up form buttons if present
+            const loginForm = document.querySelector('#content-login form');
+            if (loginForm) {
+                loginForm.addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    loginUser();
+                });
+            }
+
+            const regForm = document.querySelector('#content-cadastro form');
+            if (regForm) {
+                regForm.addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    registerUser();
+                });
+            }
+
+            // persist tab clicks
+            const tabLogin = document.getElementById('tab-login');
+            const tabCadastro = document.getElementById('tab-cadastro');
+            if (tabLogin) tabLogin.addEventListener('click', () => saveTabState('login'));
+            if (tabCadastro) tabCadastro.addEventListener('click', () => saveTabState('cadastro'));
+        });
+    </script>
+</body>
+</html>
