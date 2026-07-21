@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #1daabb;
+  --color-primary-hover: #169192;
+  --color-primary-soft: #eaf8f8;
+  --color-brand-bg: #f8fafb;
+}
+
+:root {
+  --primary: 173.3 50.9% 41.6%;
+  --primary-foreground: 210 40% 98%;
+  --background: 0 0% 100%;
+  --foreground: 222.2 84% 4.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 84% 4.9%;
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --radius: 0.5rem;
+}
+
+/* Força os botões e elementos que usam bg-primary a usarem o tom correto */
+.bg-primary, 
+button[class*="bg-primary"],
+div[class*="bg-primary"] {
+  background-color: #1daabb !important;
+  color: #ffffff !important;
+}
+
+.text-primary {
+  color: #1daabb !important;
+}
+
+.border-primary {
+  border-color: #1daabb !important;
+}
