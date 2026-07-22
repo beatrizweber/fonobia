@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import Header from '../components/Header';
+import Footer from '../components/Footer';
 import { 
   Ear, 
   BookOpen, 
@@ -147,20 +148,7 @@ export default function Home() {
         </section>
       </main>
 
-      <footer className="border-t border-slate-200 bg-white">
-        <div className="container mx-auto max-w-6xl px-4 py-12 text-center text-slate-500">
-          <p className="font-bold text-slate-900 text-lg">EscutaBem</p>
-          <p className="mt-1 text-base">Apoio para quem usa aparelho auditivo do SUS.</p>
-          <p className="mt-4">
-            <Link to="/seja-profissional" className="font-semibold text-[#0d9488] hover:underline">
-              É fonoaudiólogo(a) ou estagiário(a)? Seja voluntário
-            </Link>
-          </p>
-          <p className="mt-6 text-sm max-w-2xl mx-auto leading-relaxed text-slate-400">
-            As respostas deste site não substituem consulta com fonoaudiólogo. Em emergências, procure uma unidade de saúde.
-          </p>
-        </div>
-      </footer>
+      <Footer /> 
     </div>
   );
 }

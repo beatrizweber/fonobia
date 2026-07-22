@@ -11,12 +11,12 @@ export default function Header() {
     <header className="sticky top-0 z-40 w-full border-b border-slate-200 bg-white/95 backdrop-blur">
       <div className="container mx-auto flex h-20 max-w-6xl items-center justify-between px-4">
         
-        {/* LOGO */}
+        {/* LOGO (HOME) */}
         <Link to="/" className="flex items-center gap-3 text-2xl font-extrabold text-[#0d9488]">
           <span className="grid h-12 w-12 place-items-center rounded-2xl bg-[#0d9488] text-white shadow-md">
             <Ear className="h-7 w-7" />
           </span>
-          <span className="text-[#0d9488]">EscutaBem</span>
+          <span className="text-[#0d9488]">AjudaÁudio</span>
         </Link>
 
         {/* NAVEGAÇÃO DESKTOP */}
@@ -30,6 +30,8 @@ export default function Header() {
             <BookOpen className="h-5 w-5" />
             <span>Dúvidas</span>
           </Link>
+
+          {/* BOTÃO DO CHAT */}
           <Link 
             to="/chat" 
             className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-base font-semibold transition-colors ${
@@ -39,6 +41,7 @@ export default function Header() {
             <MessageSquare className="h-5 w-5" />
             <span>Chat</span>
           </Link>
+
           <Link 
             to="/login" 
             className="inline-flex items-center justify-center gap-2 font-semibold transition-colors bg-[#0d9488] text-white shadow hover:bg-teal-700 h-11 rounded-xl px-6 text-base"
@@ -48,7 +51,7 @@ export default function Header() {
           </Link>
         </nav>
 
-        {/* BOTAO LOGIN MOBILE */}
+        {/* BOTÃO LOGIN MOBILE */}
         <div className="flex items-center gap-2 md:hidden">
           <Link 
             to="/login" 
@@ -71,6 +74,8 @@ export default function Header() {
             <BookOpen className="h-5 w-5" />
             <span>Dúvidas</span>
           </Link>
+
+          {/* BOTÃO DO CHAT MOBILE */}
           <Link 
             to="/chat" 
             className={`flex flex-col items-center gap-0.5 rounded-xl px-4 py-1.5 text-xs font-semibold ${

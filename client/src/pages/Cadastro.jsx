@@ -1,135 +1,135 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import { UserPlus, Ear, Stethoscope } from 'lucide-react';
 
 export default function Cadastro() {
-  const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    nome: '',
-    email: '',
-    senha: '',
-    tipoUsuario: 'paciente', // 'paciente' ou 'fonoaudiologo'
-    crfa: ''
-  });
-
-  const [mensagem, setMensagem] = useState('');
-  const [carregando, setCarregando] = useState(false);
-
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setMensagem('');
-    setCarregando(true);
-
-    try {
-      // Futura chamada de API no Fastify
-      const response = await fetch('http://localhost:3000/api/cadastro', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setMensagem('✅ Cadastro realizado com sucesso!');
-        setTimeout(() => navigate('/login'), 1500);
-      } else {
-        setMensagem(`❌ Erro: ${data.mensagem}`);
-      }
-    } catch (error) {
-      setMensagem('❌ Não foi possível conectar ao servidor (Servidor offline).');
-    } finally {
-      setCarregando(false);
-    }
-  };
+  const [tipoPerfil, setTipoPerfil] = useState('cliente'); // 'cliente' ou 'apoiador'
 
   return (
-    <div style={{ maxWidth: '400px', margin: '40px auto', fontFamily: 'sans-serif', padding: '20px', border: '1px solid #ddd', borderRadius: '8px' }}>
-      <h2>Fonobia - Criar Conta</h2>
+    <div className="flex min-h-screen flex-col bg-background text-foreground antialiased font-sans">
+      <Header />
 
-      <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: '12px' }}>
-          <label style={{ display: 'block', marginBottom: '4px' }}>Nome Completo:</label>
-          <input
-            type="text"
-            name="nome"
-            value={formData.nome}
-            onChange={handleChange}
-            required
-            style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
-          />
-        </div>
-
-        <div style={{ marginBottom: '12px' }}>
-          <label style={{ display: 'block', marginBottom: '4px' }}>E-mail:</label>
-          <input
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            required
-            style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
-          />
-        </div>
-
-        <div style={{ marginBottom: '12px' }}>
-          <label style={{ display: 'block', marginBottom: '4px' }}>Senha:</label>
-          <input
-            type="password"
-            name="senha"
-            value={formData.senha}
-            onChange={handleChange}
-            required
-            style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
-          />
-        </div>
-
-        <div style={{ marginBottom: '12px' }}>
-          <label style={{ display: 'block', marginBottom: '4px' }}>Tipo de Perfil:</label>
-          <select
-            name="tipoUsuario"
-            value={formData.tipoUsuario}
-            onChange={handleChange}
-            style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
-          >
-            <option value="paciente">Paciente / Usuário Surdo</option>
-            <option value="fonoaudiologo">Fonoaudiólogo(a)</option>
-          </select>
-        </div>
-
-        {/* Exibe o CRFa dinamicamente apenas para Fonoaudiólogos */}
-        {formData.tipoUsuario === 'fonoaudiologo' && (
-          <div style={{ marginBottom: '12px', background: '#f0f4f8', padding: '10px', borderRadius: '4px' }}>
-            <label style={{ display: 'block', marginBottom: '4px' }}>Registro CRFa (ex: 12345/SP):</label>
-            <input
-              type="text"
-              name="crfa"
-              placeholder="Digite seu número CRFa"
-              value={formData.crfa}
-              onChange={handleChange}
-              required
-              style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
-            />
+      <main className="flex-1 flex items-center justify-center py-12 px-4">
+        <div className="w-full max-w-md space-y-6 bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
+          
+          <div className="text-center">
+            <h1 className="text-2xl font-extrabold text-slate-900">
+              Crie sua Conta
+            </h1>
+            <p className="text-sm text-slate-500 mt-1">
+              Selecione seu perfil e faça parte do AjudaÁudio.
+            </p>
           </div>
-        )}
 
-        <button
-          type="submit"
-          disabled={carregando}
-          style={{ width: '100%', padding: '10px', backgroundColor: '#0066cc', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-        >
-          {carregando ? 'Cadastrando...' : 'Cadastrar'}
-        </button>
-      </form>
+          <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
+            
+            {/* SELEÇÃO DO TIPO DE PERFIL */}
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">
+                Como você deseja usar o AjudaÁudio?
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setTipoPerfil('cliente')}
+                  className={`flex flex-col items-center justify-center p-3.5 rounded-xl border-2 transition-all gap-1.5 text-center ${
+                    tipoPerfil === 'cliente'
+                      ? 'border-[#34a094] bg-[#34a094]/10 text-[#34a094] font-bold'
+                      : 'border-slate-200 text-slate-600 hover:border-slate-300'
+                  }`}
+                >
+                  <Ear className="w-6 h-6" />
+                  <span className="text-sm">Usuário / Cliente</span>
+                </button>
 
-      {mensagem && <p style={{ marginTop: '15px', fontWeight: 'bold' }}>{mensagem}</p>}
+                <button
+                  type="button"
+                  onClick={() => setTipoPerfil('apoiador')}
+                  className={`flex flex-col items-center justify-center p-3.5 rounded-xl border-2 transition-all gap-1.5 text-center ${
+                    tipoPerfil === 'apoiador'
+                      ? 'border-[#34a094] bg-[#34a094]/10 text-[#34a094] font-bold'
+                      : 'border-slate-200 text-slate-600 hover:border-slate-300'
+                  }`}
+                >
+                  <Stethoscope className="w-6 h-6" />
+                  <span className="text-sm">Fonoaudiólogo / Apoiador</span>
+                </button>
+              </div>
+            </div>
 
-      <p style={{ marginTop: '15px', fontSize: '14px' }}>
-        Já tem uma conta? <Link to="/login">Faça Login</Link>
-      </p>
+            {/* CAMPO NOME */}
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1">
+                Nome Completo
+              </label>
+              <input
+                type="text"
+                placeholder="Seu nome"
+                className="w-full p-3 border border-slate-200 rounded-xl text-base focus:outline-none focus:border-[#34a094]"
+              />
+            </div>
+
+            {/* CAMPO EMAIL */}
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1">
+                E-mail
+              </label>
+              <input
+                type="email"
+                placeholder="seu@email.com"
+                className="w-full p-3 border border-slate-200 rounded-xl text-base focus:outline-none focus:border-[#34a094]"
+              />
+            </div>
+
+            {/* CAMPO ESPECÍFICO DE FONO/APOIADOR (Aparece apenas para apoiadores) */}
+            {tipoPerfil === 'apoiador' && (
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">
+                  CRFa ou Instituição de Ensino
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ex: CRFa 2-XXXXX ou Nome da Faculdade"
+                  className="w-full p-3 border border-slate-200 rounded-xl text-base focus:outline-none focus:border-[#34a094]"
+                />
+              </div>
+            )}
+
+            {/* CAMPO SENHA */}
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1">
+                Senha
+              </label>
+              <input
+                type="password"
+                placeholder="••••••••"
+                className="w-full p-3 border border-slate-200 rounded-xl text-base focus:outline-none focus:border-[#34a094]"
+              />
+            </div>
+
+            {/* BOTÃO SUBMIT */}
+            <button
+              type="submit"
+              className="w-full bg-[#34a094] hover:bg-[#2d8a80] text-white font-bold py-3.5 rounded-xl transition-colors shadow-sm flex items-center justify-center gap-2 mt-6 text-base"
+            >
+              <UserPlus className="w-5 h-5" /> Concluir Cadastro
+            </button>
+          </form>
+
+          <div className="text-center pt-2 border-t border-slate-100">
+            <p className="text-sm text-slate-600">
+              Já possui uma conta?{' '}
+              <Link to="/login" className="font-bold text-[#34a094] hover:underline">
+                Faça login
+              </Link>
+            </p>
+          </div>
+        </div>
+      </main>
+
+      <Footer minimal={true}/>
     </div>
   );
 }
