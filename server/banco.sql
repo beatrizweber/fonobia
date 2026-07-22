@@ -1,5 +1,5 @@
 -- ============================================================
--- EscutaBem — Schema do banco de dados (PostgreSQL)
+-- AjudaÁudio — Schema do banco de dados (PostgreSQL)
 -- ============================================================
 
 

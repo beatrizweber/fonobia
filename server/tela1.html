@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Acessar EscutaBem</title>
+    <title>Acessar AjudaÁudio</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     
@@ -81,7 +81,7 @@
                     <span class="grid h-12 w-12 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-md">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-7 w-7"><path d="M6 8.5a6.5 6.5 0 1 1 13 0c0 6-6 6-6 10a3.5 3.5 0 1 1-7 0"></path><path d="M15 8.5a2.5 2.5 0 0 0-5 0v1a2 2 0 1 1 0 4"></path></svg>
                     </span>
-                    <span>EscutaBem</span>
+                    <span>AjudaÁudio</span>
                 </a>
                 
                 <nav class="hidden items-center gap-1 md:flex">
@@ -108,7 +108,7 @@
                     <div class="mx-auto mb-3 grid h-16 w-16 place-items-center rounded-2xl bg-primary text-primary-foreground">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-8 w-8"><path d="m10 17 5-5-5-5"></path><path d="M15 12H3"></path><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path></svg>
                     </div>
-                    <h1 class="text-3xl font-extrabold text-foreground">Acessar EscutaBem</h1>
+                    <h1 class="text-3xl font-extrabold text-foreground">Acessar AjudaÁudio</h1>
                     <p class="mt-2 text-base text-muted-foreground">Entre como paciente ou fonoaudiólogo(a).</p>
                 </div>
 
@@ -203,7 +203,7 @@
 
         <footer class="mt-16 border-t border-border bg-secondary/40">
             <div class="container mx-auto max-w-6xl px-4 py-10 text-center text-base text-muted-foreground">
-                <p class="font-semibold text-foreground">EscutaBem</p>
+                <p class="font-semibold text-foreground">AjudaÁudio</p>
                 <p class="mt-2">Apoio para quem usa aparelho auditivo do SUS.</p>
                 <p class="mt-3">
                     <a href="tela4.html" class="font-semibold text-primary hover:underline">É fonoaudiólogo(a) ou estagiário(a)? Seja voluntário</a>
@@ -282,8 +282,8 @@
             }
 
             const user = { name, email, role };
-            localStorage.setItem('escutabem_user', JSON.stringify(user));
-            localStorage.setItem('escutabem_authed', '1');
+            localStorage.setItem('AjudaÁudio_user', JSON.stringify(user));
+            localStorage.setItem('AjudaÁudio_authed', '1');
             saveTabState('login');
             // Redirect to chat (tela3)
             window.location.href = 'tela3.html';
@@ -299,15 +299,15 @@
                 return;
             }
 
-            const stored = JSON.parse(localStorage.getItem('escutabem_user') || 'null');
+            const stored = JSON.parse(localStorage.getItem('AjudaÁudio_user') || 'null');
             if (stored && stored.email === email) {
-                localStorage.setItem('escutabem_authed', '1');
+                localStorage.setItem('AjudaÁudio_authed', '1');
                 window.location.href = 'tela3.html';
             } else {
                 // If no stored user, create a minimal one
                 const user = { name: '', email, role: 'paciente' };
-                localStorage.setItem('escutabem_user', JSON.stringify(user));
-                localStorage.setItem('escutabem_authed', '1');
+                localStorage.setItem('AjudaÁudio_user', JSON.stringify(user));
+                localStorage.setItem('AjudaÁudio_authed', '1');
                 window.location.href = 'tela3.html';
             }
         }
