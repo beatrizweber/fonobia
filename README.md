@@ -1,56 +1,73 @@
-# 👂 AjudaÁudio — Guia para Testes
+# 🎧 AjudaÁudio
 
-Este é o projeto **AjudaÁudio**, uma plataforma de apoio para usuários de aparelho auditivo do SUS. 
-
-Se você foi convidado para testar o site, siga o passo a passo simples abaixo para rodar o projeto no seu computador!
+O **AjudaÁudio** é uma plataforma desenvolvida para conectar pacientes usuários de aparelhos auditivos a fonoaudiólogos e estagiários voluntários, além de oferecer suporte através de assistência técnica inteligente.
 
 ---
 
-## 📋 Pré-requisitos (Fazer apenas 1 vez)
+## 🛠️ Tecnologias Utilizadas
 
-Antes de começar, você precisa ter o **Node.js** instalado no seu computador.
+### **Front-end (`/client`)**
+* **React** + **Vite**
+* **Tailwind CSS** (Estilização)
+* **Lucide React** (Ícones)
+* **React Router DOM** (Navegação)
 
-1. Baixe e instale o Node.js em: https://nodejs.org (escolha a versão recomendada "LTS").
-2. Baixe e descompacte a pasta deste projeto no seu computador.
+### **Back-end (`/server`)**
+* **Node.js**
+* **Fastify** (Framework web leve e rápido)
+* **`pg`** (Driver nativo do PostgreSQL com `Pool`)
+* **`bcryptjs`** (Criptografia de senhas)
+* **`dotenv`** (Gerenciamento de variáveis de ambiente)
 
----
-
-## 🚀 Como Rodar o Site no seu Computador
-
-### Passo 1: Abrir o Terminal na pasta do projeto
-- **no Windows:** Abra a pasta principal do projeto, clique na barra de endereço lá em cima, digite `cmd` e aperte **Enter**.
-- **no Mac/Linux:** Clique com o botão direito na pasta do projeto e selecione **"Novo Terminal na Pasta"** (ou abra o Terminal e navegue até ela).
-
----
-
-### Passo 2: Entrar na pasta do sistema e instalar as dependências
-Cole os comandos abaixo no terminal (um de cada vez) e aperte **Enter**:
-
-cd client
-
-npm install
-
-*(Aguarde alguns segundos até concluir a instalação).*
+### **Banco de Dados**
+* **PostgreSQL** (Relacional)
 
 ---
 
-### Passo 3: Iniciar o site
-Cole o comando abaixo e aperte **Enter**:
+## 🚀 Como Rodar o Projeto
 
-npm run dev
-
----
-
-## 🌐 Acessando o Site
-
-Depois de rodar o comando acima, vai aparecer uma mensagem no terminal parecida com esta:
-
-  ➜  Local:   http://localhost:5173/
-
-1. **Segure Ctrl (ou Cmd no Mac) e clique no link**, ou abra o seu navegador (Chrome/Edge) e acesse: `http://localhost:5173`
-2. Pronto! O site estará funcionando.
+### 📋 Pré-requisitos
+* **Node.js** (v18 ou superior)
+* **PostgreSQL** instalado e rodando em sua máquina
+* **Git**
 
 ---
 
-## 🛑 Como parar o site
-Quando terminar os testes, volte no terminal e aperte as teclas **Ctrl + C** para fechar o servidor.
+### 1️⃣ Configuração do Banco de Dados (PostgreSQL)
+
+Abra o seu gerenciador de banco de dados (DBeaver, pgAdmin, etc.) ou via terminal `psql`, crie o banco de dados `ajudaaudio` e execute o script SQL abaixo para criar o esquema relacional:
+
+```sql
+-- Cria o banco de dados (se ainda não existir)
+CREATE DATABASE ajudaaudio;
+
+-- Cria extensão para UUIDs
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- 1. Tabela central de usuários
+CREATE TABLE IF NOT EXISTS usuario (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  nome VARCHAR(255) NOT NULL,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  senha_hash VARCHAR(255) NOT NULL,
+  tipo VARCHAR(20) CHECK (tipo IN ('paciente', 'fonoaudiologo', 'estagiario')) NOT NULL,
+  criado_em TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 2. Tabela de Pacientes
+CREATE TABLE IF NOT EXISTS paciente (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  usuario_id UUID UNIQUE NOT NULL REFERENCES usuario(id) ON DELETE CASCADE,
+  cartao_sus VARCHAR(50),
+  data_nascimento DATE,
+  modelo_aparelho VARCHAR(100),
+  lado_aparelho VARCHAR(20) DEFAULT 'bilateral'
+);
+
+-- 3. Tabela de Voluntários (Fonoaudiólogos e Estagiários)
+CREATE TABLE IF NOT EXISTS voluntario (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  usuario_id UUID UNIQUE NOT NULL REFERENCES usuario(id) ON DELETE CASCADE,
+  registro_profissional VARCHAR(100),
+  instituicao VARCHAR(255)
+);
