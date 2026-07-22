@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { MessageSquare, Mic, Send, HelpCircle, X, UserCheck, Loader2 } from 'lucide-react';
+// IMPORTAÇÃO DA API CONECTADA AO FASTIFY
+import { api } from '../services/api';
 
 export default function ChatIa() {
   const [messages, setMessages] = useState([
@@ -15,73 +17,43 @@ export default function ChatIa() {
   const [isListening, setIsListening] = useState(false);
   const [showFonoModal, setShowFonoModal] = useState(false);
 
-  // PROMPT DE SISTEMA: Instrui a IA sobre seu papel e limites de atuação
-  const SYSTEM_INSTRUCTION = `
-    Você é a assistente virtual do projeto "EscutaBem", especialista em auxiliar pacientes usuários de aparelhos auditivos (AASI) do SUS.
-    Sua linguagem deve ser extremamente simples, acolhedora, direta e acessível para idosos ou pessoas com pouca afinidade com tecnologia.
+  // Função para enviar mensagem ao Backend Fastify
+  // Função para enviar mensagem ao Backend Fastify
+const handleSend = async (e) => {
+  e?.preventDefault();
+  if (!input.trim() || isLoading) return;
+
+  const userText = input;
+  const updatedHistory = [...messages, { sender: 'user', text: userText }];
+  
+  setMessages(updatedHistory);
+  setInput('');
+  setIsLoading(true);
+
+  try {
+    // 1. Faz a chamada ao backend Fastify
+    const responsePromise = api.sendMessage(userText);
     
-    Diretrizes:
-    1. Forneça orientações práticas sobre troca de pilhas/baterias, limpeza de cera, substituição de olivas (borrachinhas), ajuste do volume e eliminação de chiados/apitos (efeito microfonia).
-    2. NUNCA faça diagnósticos médicos ou recomende alteração de regulagem interna do aparelho sem acompanhamento profissional.
-    3. Em casos graves ou de dúvida persistente, recomende procurar o fonoaudiólogo da unidade de saúde (SUS) responsável.
-    4. Mantenha respostas curtas e divididas em passos simples (ex: Passo 1, Passo 2).
-  `;
+    // 2. Garante um tempo mínimo de exibição do "Analisando sua dúvida..." (ex: 1.5 segundos)
+    const delayPromise = new Promise((resolve) => setTimeout(resolve, 1500));
 
-  // Função para chamar a API da IA
-  const fetchIaResponse = async (userText, chatHistory) => {
-    // Insira sua API Key de testes ou use uma variável de ambiente (import.meta.env.VITE_GEMINI_API_KEY)
-    const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-
-    if (!API_KEY) {
-      // Fallback amigável caso não haja chave de API configurada
-      return "Desculpe, estou em manutenção no momento. Verifique se o aparelho está bem encaixado na orelha e limpo. Caso precise de ajuda, clique no botão para falar com um fonoaudiólogo.";
-    }
-
-    try {
-      // Formata o histórico no formato esperado pela API do Gemini
-      const contents = [
-        { role: 'user', parts: [{ text: SYSTEM_INSTRUCTION }] },
-        ...chatHistory.map((m) => ({
-          role: m.sender === 'user' ? 'user' : 'model',
-          parts: [{ text: m.text }]
-        })),
-        { role: 'user', parts: [{ text: userText }] }
-      ];
-
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents })
-        }
-      );
-
-      const data = await response.json();
-      return data.candidates[0].content.parts[0].text;
-    } catch (error) {
-      console.error('Erro na chamada da IA:', error);
-      return 'Ops, tive um problema ao tentar entender sua dúvida. Pode tentar enviar novamente?';
-    }
-  };
-
-  const handleSend = async (e) => {
-    e?.preventDefault();
-    if (!input.trim() || isLoading) return;
-
-    const userText = input;
-    const updatedHistory = [...messages, { sender: 'user', text: userText }];
+    // Aguarda o backend E o tempo mínimo terminarem
+    const [response] = await Promise.all([responsePromise, delayPromise]);
     
-    setMessages(updatedHistory);
-    setInput('');
-    setIsLoading(true);
-
-    // Chama a IA real
-    const iaResponseText = await fetchIaResponse(userText, messages);
-
-    setMessages((prev) => [...prev, { sender: 'ia', text: iaResponseText }]);
+    setMessages((prev) => [...prev, { sender: 'ia', text: response.text }]);
+  } catch (error) {
+    console.error('Erro ao conectar com o backend:', error);
+    setMessages((prev) => [
+      ...prev, 
+      { 
+        sender: 'ia', 
+        text: 'Ops, tive um problema de conexão com o servidor. Verifique se o backend está ligado e tente novamente.' 
+      }
+    ]);
+  } finally {
     setIsLoading(false);
-  };
+  }
+};
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -206,6 +178,7 @@ export default function ChatIa() {
         </div>
       </main>
 
+      {/* MODAL FONOAUDIÓLOGO */}
       {showFonoModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl relative">
