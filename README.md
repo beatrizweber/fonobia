@@ -10,7 +10,7 @@ Se você foi convidado para testar o site, siga o passo a passo simples abaixo p
 
 Antes de começar, você precisa ter o **Node.js** instalado no seu computador.
 
-1. Baixe e instale o Node.js em: [https://nodejs.org](https://nodejs.org) *(escolha a versão recomendada "LTS")*.
+1. Baixe e instale o Node.js em: https://nodejs.org (escolha a versão recomendada "LTS").
 2. Baixe a pasta deste projeto para o seu computador.
 
 ---
@@ -26,5 +26,29 @@ Antes de começar, você precisa ter o **Node.js** instalado no seu computador.
 ### Passo 2: Instalar as dependências (Apenas na primeira vez)
 Cole o comando abaixo no terminal e aperte **Enter**:
 
-```bash
 npm install
+
+*(Aguarde alguns segundos até concluir a instalação).*
+
+---
+
+### Passo 3: Iniciar o site
+Cole o comando abaixo e aperte **Enter**:
+
+npm run dev
+
+---
+
+## 🌐 Acessando o Site
+
+Depois de rodar o comando acima, vai aparecer uma mensagem no terminal parecida com esta:
+
+  ➜  Local:   http://localhost:5173/
+
+1. **Segure Ctrl (ou Cmd no Mac) e clique no link**, ou abra o seu navegador (Chrome/Edge) e acesse: `http://localhost:5173`
+2. Pronto! O site estará funcionando.
+
+---
+
+## 🛑 Como parar o site
+Quando terminar os testes, volte no terminal e aperte as teclas **Ctrl + C** para fechar o servidor.
