@@ -1,16 +1,30 @@
-# React + Vite
+# 👂 AjudaÁudio — Guia para Testes
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Este é o projeto **AjudaÁudio**, uma plataforma de apoio para usuários de aparelho auditivo do SUS. 
 
-Currently, two official plugins are available:
+Se você foi convidado para testar o site, siga o passo a passo simples abaixo para rodar o projeto no seu computador!
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## 📋 Pré-requisitos (Fazer apenas 1 vez)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Antes de começar, você precisa ter o **Node.js** instalado no seu computador.
 
-## Expanding the Oxlint configuration
+1. Baixe e instale o Node.js em: [https://nodejs.org](https://nodejs.org) *(escolha a versão recomendada "LTS")*.
+2. Baixe a pasta deste projeto para o seu computador.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+---
+
+## 🚀 Como Rodar o Site no seu Computador
+
+### Passo 1: Abrir o Terminal na pasta do projeto
+- **no Windows:** Abra a pasta do projeto, clique na barra de endereço lá em cima, digite `cmd` e aperte **Enter**.
+- **no Mac/Linux:** Clique com o botão direito na pasta do projeto e selecione **"Novo Terminal na Pasta"** (ou abra o Terminal e navegue até ela).
+
+---
+
+### Passo 2: Instalar as dependências (Apenas na primeira vez)
+Cole o comando abaixo no terminal e aperte **Enter**:
+
+```bash
+npm install
