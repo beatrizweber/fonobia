@@ -11,20 +11,22 @@ Se você foi convidado para testar o site, siga o passo a passo simples abaixo p
 Antes de começar, você precisa ter o **Node.js** instalado no seu computador.
 
 1. Baixe e instale o Node.js em: https://nodejs.org (escolha a versão recomendada "LTS").
-2. Baixe a pasta deste projeto para o seu computador.
+2. Baixe e descompacte a pasta deste projeto no seu computador.
 
 ---
 
 ## 🚀 Como Rodar o Site no seu Computador
 
 ### Passo 1: Abrir o Terminal na pasta do projeto
-- **no Windows:** Abra a pasta do projeto, clique na barra de endereço lá em cima, digite `cmd` e aperte **Enter**.
+- **no Windows:** Abra a pasta principal do projeto, clique na barra de endereço lá em cima, digite `cmd` e aperte **Enter**.
 - **no Mac/Linux:** Clique com o botão direito na pasta do projeto e selecione **"Novo Terminal na Pasta"** (ou abra o Terminal e navegue até ela).
 
 ---
 
-### Passo 2: Instalar as dependências (Apenas na primeira vez)
-Cole o comando abaixo no terminal e aperte **Enter**:
+### Passo 2: Entrar na pasta do sistema e instalar as dependências
+Cole os comandos abaixo no terminal (um de cada vez) e aperte **Enter**:
+
+cd client
 
 npm install
 
