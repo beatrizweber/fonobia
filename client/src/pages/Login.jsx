@@ -19,7 +19,7 @@ export default function Login() {
     try {
       const response = await fetch('http://localhost:3001/api/auth/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' }, // 🟢 Corrigido o Content-Type
         body: JSON.stringify({ email, senha })
       });
 
@@ -29,11 +29,11 @@ export default function Login() {
         throw new Error(data.error || 'Falha ao realizar login.');
       }
 
-      // Salva os dados do usuário autenticado no navegador
+      // 1. Salva os dados do usuário autenticado no navegador
       localStorage.setItem('usuario', JSON.stringify(data.usuario));
 
-      // Redireciona para o chat ou página principal
-      navigate('/chat');
+      // 🟢 2. Redireciona para a Home (/) após logar
+      navigate('/');
     } catch (err) {
       setErro(err.message);
     } finally {

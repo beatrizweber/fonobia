@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { Shield, Mail, UserCheck, ArrowLeft, Stethoscope, User, ShieldAlert } from 'lucide-react';
+import { Shield, Mail, UserCheck, ArrowLeft, Stethoscope, User, ShieldAlert, Calendar } from 'lucide-react';
 
 export default function Admin() {
   const [usuarios, setUsuarios] = useState([]);
@@ -11,21 +11,22 @@ export default function Admin() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // 🔒 1. Trava de Segurança: Checa permissão do usuário no localStorage
+    // 🔒 1. Trava de Segurança Flexível (Checa tipo OU perfil, ignorando maiúsculas)
     const usuarioSalvo = JSON.parse(localStorage.getItem('usuario') || '{}');
+    const tipoUsuario = (usuarioSalvo?.tipo || usuarioSalvo?.perfil || '').toLowerCase();
 
-    if (!usuarioSalvo || usuarioSalvo.perfil !== 'Admin') {
+    if (tipoUsuario !== 'admin') {
       alert('Acesso restrito a administradores!');
       navigate('/');
       return;
     }
 
-    // 2. Busca a lista enviando a role no cabeçalho
+    // 2. Busca a lista enviando o perfil/tipo no cabeçalho
     async function carregarUsuarios() {
       try {
         const response = await fetch('http://localhost:3001/api/admin/usuarios', {
           headers: {
-            'x-user-role': usuarioSalvo.perfil || ''
+            'x-user-role': tipoUsuario
           }
         });
         const data = await response.json();
@@ -46,13 +47,16 @@ export default function Admin() {
     carregarUsuarios();
   }, [navigate]);
 
-  // 📦 Agrupa os usuários pelo perfil para montar as caixas separadas
+  // 📦 Agrupa os usuários pelo tipo/perfil para montar as caixas separadas
   const usuariosPorPerfil = usuarios.reduce((acc, user) => {
-    const perfil = user.perfil || 'Paciente / Usuário';
-    if (!acc[perfil]) {
-      acc[perfil] = [];
+    const perfilRaw = user.tipo || user.perfil || 'Paciente / Usuário';
+    // Capitaliza a primeira letra para exibição bonita no título da caixa
+    const perfilFormatado = perfilRaw.charAt(0).toUpperCase() + perfilRaw.slice(1);
+
+    if (!acc[perfilFormatado]) {
+      acc[perfilFormatado] = [];
     }
-    acc[perfil].push(user);
+    acc[perfilFormatado].push(user);
     return acc;
   }, {});
 
@@ -81,6 +85,15 @@ export default function Admin() {
       headerBg: 'bg-emerald-50/60',
       borderColor: 'border-emerald-200',
     };
+  };
+
+  // 📅 Função para formatar a data vinda do banco de dados (ex: 2026-08-03T15:00:00.000Z -> 03/08/2026)
+  const formatarData = (dataString) => {
+    if (!dataString) return 'Data não reg.';
+    const data = new Date(dataString);
+    return isNaN(data.getTime())
+      ? dataString
+      : data.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
   };
 
   return (
@@ -159,6 +172,7 @@ export default function Admin() {
                           <th className="py-3 px-6">ID</th>
                           <th className="py-3 px-6">Nome Completo</th>
                           <th className="py-3 px-6">E-mail</th>
+                          <th className="py-3 px-6">Data de Criação</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 text-slate-700 text-sm">
@@ -177,6 +191,13 @@ export default function Admin() {
                               <div className="flex items-center gap-2">
                                 <Mail className="w-4 h-4 text-slate-400" />
                                 {user.email}
+                              </div>
+                            </td>
+                            {/* 🟢 CÉLULA DA DATA DE CRIAÇÃO ADICIONADA */}
+                            <td className="py-4 px-6 text-slate-500 font-medium">
+                              <div className="flex items-center gap-2 text-xs">
+                                <Calendar className="w-4 h-4 text-slate-400" />
+                                {formatarData(user.criado_em || user.created_at || user.data_criacao)}
                               </div>
                             </td>
                           </tr>

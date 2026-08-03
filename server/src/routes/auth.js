@@ -3,13 +3,13 @@ import bcrypt from 'bcryptjs';
 
 export async function authRoutes(server, options) {
   
-  // ROTA DE CADASTRO
+  // 1. ROTA DE CADASTRO
   server.post('/api/auth/register', async (request, reply) => {
     const { 
       nome, 
       email, 
       senha, 
-      tipo, 
+      tipo, // 'paciente', 'fonoaudiologo', 'estagiario', 'admin'
       cartao_sus, 
       data_nascimento, 
       modelo_aparelho, 
@@ -25,17 +25,13 @@ export async function authRoutes(server, options) {
     const client = await pool.connect();
 
     try {
-      // 1. Checa e-mail existente
       const checkEmail = await client.query('SELECT id FROM usuario WHERE email = $1', [email]);
       if (checkEmail.rows.length > 0) {
         client.release();
         return reply.status(400).send({ error: 'E-mail já cadastrado.' });
       }
 
-      // 2. Hash da senha
       const senhaHash = await bcrypt.hash(senha, 6);
-
-      // 3. Transação SQL
       await client.query('BEGIN');
 
       const insertUsuario = `
@@ -43,10 +39,10 @@ export async function authRoutes(server, options) {
         VALUES ($1, $2, $3, $4)
         RETURNING id, nome, email, tipo, criado_em;
       `;
-      const resUsuario = await client.query(insertUsuario, [nome, email, senhaHash, tipo]);
+      const resUsuario = await client.query(insertUsuario, [nome, email, senhaHash, tipo.toLowerCase()]);
       const novoUsuario = resUsuario.rows[0];
 
-      if (tipo === 'paciente') {
+      if (tipo.toLowerCase() === 'paciente') {
         const insertPaciente = `
           INSERT INTO paciente (usuario_id, cartao_sus, data_nascimento, modelo_aparelho, lado_aparelho)
           VALUES ($1, $2, $3, $4, $5);
@@ -58,7 +54,7 @@ export async function authRoutes(server, options) {
           modelo_aparelho || null,
           lado_aparelho || 'bilateral'
         ]);
-      } else if (tipo === 'fonoaudiologo' || tipo === 'estagiario') {
+      } else if (tipo.toLowerCase() === 'fonoaudiologo' || tipo.toLowerCase() === 'estagiario') {
         const insertVoluntario = `
           INSERT INTO voluntario (usuario_id, registro_profissional, instituicao)
           VALUES ($1, $2, $3);
@@ -71,22 +67,22 @@ export async function authRoutes(server, options) {
       }
 
       await client.query('COMMIT');
+      client.release();
 
       return reply.status(201).send({
-        message: 'Cadastro realizado com sucesso!',
+        message: 'Usuário cadastrado com sucesso!',
         usuario: novoUsuario
       });
 
     } catch (error) {
       await client.query('ROLLBACK');
-      server.log.error(error);
-      return reply.status(500).send({ error: 'Erro ao cadastrar no banco de dados.' });
-    } finally {
       client.release();
+      server.log.error(error);
+      return reply.status(500).send({ error: 'Erro ao cadastrar usuário.' });
     }
   });
 
-  // ROTA DE LOGIN
+  // 2. ROTA DE LOGIN
   server.post('/api/auth/login', async (request, reply) => {
     const { email, senha } = request.body || {};
 
@@ -123,21 +119,22 @@ export async function authRoutes(server, options) {
       return reply.status(500).send({ error: 'Erro no servidor ao tentar logar.' });
     }
   });
-  // Buscar todos os usuários para o painel admin
+
+  // 3. ROTA BUSCAR TODOS OS USUÁRIOS (PAINEL ADMIN)
   server.get('/api/admin/usuarios', async (request, reply) => {
     try {
-      // 💡 Dica: Se você usar JWT/Sessão, pegue o usuário logado do request.
-      // Exemplo de verificação simples via query param ou header se ainda não tiver JWT completo:
-      const userRole = request.headers['x-user-role']; 
+      const userRole = (request.headers['x-user-role'] || '').toLowerCase(); 
 
-      if (userRole !== 'Admin') {
+      if (userRole !== 'admin') {
         return reply.status(403).send({ error: 'Acesso negado. Requer perfil de Administrador.' });
       }
 
+      // Consulta ajustada com a tabela 'usuario' e os campos corretos
       const result = await pool.query(
-        'SELECT id, nome, email, perfil FROM usuarios ORDER BY id DESC'
+        'SELECT id, nome, email, tipo, criado_em FROM usuario ORDER BY id DESC'
       );
-      return result.rows;
+      
+      return reply.send(result.rows);
     } catch (error) {
       server.log.error(error);
       return reply.status(500).send({ error: 'Erro ao buscar lista de usuários.' });

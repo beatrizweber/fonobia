@@ -56,3 +56,11 @@ Content-Type: application/json
 {
   "message": "Meu aparelho está com o som muito baixo, o que posso fazer?"
 }
+
+###
+
+GET {{baseUrl}}/usuarios
+
+###
+
+DELETE {{baseUrl}}/usuarios/e403c1b9-4223-4934-8a5b-7aab5537e882

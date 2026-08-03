@@ -6,7 +6,8 @@ import ChatIa from './pages/ChatIa';
 import Login from './pages/Login';
 import Cadastro from './pages/Cadastro';
 import Atendimento from './pages/Atendimento';
-import Admin from './pages/Admin'
+import Admin from './pages/Admin';
+import Perfil from './pages/Perfil'; // 🟢 1. Adicionado import da página Perfil
 
 export default function App() {
   return (
@@ -19,7 +20,9 @@ export default function App() {
         <Route path="/cadastro" element={<Cadastro />} />
         <Route path="/atendimento" element={<Atendimento />} />
         <Route path="/admin" element={<Admin />} />
+        <Route path="/perfil" element={<Perfil />} /> {/* 🟢 2. Adicionada a rota /perfil */}
 
+        {/* Rota coringa de fallback (sempre fica por último) */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

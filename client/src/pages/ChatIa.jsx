@@ -4,13 +4,31 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { MessageSquare, Mic, Send, HelpCircle, X, UserCheck, Loader2 } from 'lucide-react';
 
+// 🟢 Função para converter **texto** em negrito nativo sem bibliotecas extras
+const formatarTextoComNegrito = (texto) => {
+  if (!texto) return '';
+
+  const partes = texto.split(/(\*\*.*?\*\*)/g);
+
+  return partes.map((parte, index) => {
+    if (parte.startsWith('**') && parte.endsWith('**')) {
+      return (
+        <strong key={index} className="font-extrabold text-slate-900">
+          {parte.slice(2, -2)}
+        </strong>
+      );
+    }
+    return parte;
+  });
+};
+
 export default function ChatIa() {
   const navigate = useNavigate();
 
   const [messages, setMessages] = useState([
     {
       sender: 'ia',
-      text: 'Olá! Sou a assistente do EscutaBem. Conte sua dúvida sobre seu aparelho auditivo do SUS que vou te ajudar. Você pode escrever ou tocar no microfone.'
+      text: 'Olá! Sou a assistente do **AjudaÁudio**. Conte sua dúvida sobre seu aparelho auditivo do SUS que vou te ajudar. Você pode escrever ou tocar no microfone.'
     }
   ]);
   const [input, setInput] = useState('');
@@ -119,7 +137,8 @@ export default function ChatIa() {
                       : 'text-slate-900 bg-slate-100 p-4 rounded-2xl'
                   }`}
                 >
-                  {msg.text}
+                  {/* 🟢 Formatação tratada aqui */}
+                  {msg.sender === 'ia' ? formatarTextoComNegrito(msg.text) : msg.text}
                 </div>
               </div>
             ))}

@@ -32,6 +32,16 @@
     return { status: 'OK', message: 'Backend do AjudaÁudio está no ar!' };
   });
 
+  //Apenas para criação dos usuários admins
+  server.get('/usuarios', async () => {
+    return await pool.query('SELECT * FROM usuario')
+  })
+
+  server.delete('/usuarios/:id', async (request, reply) => {
+    const id = request.params.id;
+    const resultado = await pool.query(`DELETE FROM usuario where id = $1`, [id]);
+    reply.status(200).send({message:"O usuário com o id: " + id + " foi deletado com sucesso!"});
+  })
   const PORT = process.env.PORT || 3001;
 
   const start = async () => {
