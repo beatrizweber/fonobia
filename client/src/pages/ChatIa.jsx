@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { MessageSquare, Mic, Send, HelpCircle, X, UserCheck, Loader2 } from 'lucide-react';
-// IMPORTAÇÃO DA API CONECTADA AO FASTIFY
-import { api } from '../services/api';
 
 export default function ChatIa() {
+  const navigate = useNavigate();
+
   const [messages, setMessages] = useState([
     {
       sender: 'ia',
@@ -17,43 +18,45 @@ export default function ChatIa() {
   const [isListening, setIsListening] = useState(false);
   const [showFonoModal, setShowFonoModal] = useState(false);
 
-  // Função para enviar mensagem ao Backend Fastify
-  // Função para enviar mensagem ao Backend Fastify
-const handleSend = async (e) => {
-  e?.preventDefault();
-  if (!input.trim() || isLoading) return;
+  // Função para enviar mensagem ao Backend Fastify via fetch
+  const handleSend = async (e) => {
+    e?.preventDefault();
+    if (!input.trim() || isLoading) return;
 
-  const userText = input;
-  const updatedHistory = [...messages, { sender: 'user', text: userText }];
-  
-  setMessages(updatedHistory);
-  setInput('');
-  setIsLoading(true);
-
-  try {
-    // 1. Faz a chamada ao backend Fastify
-    const responsePromise = api.sendMessage(userText);
+    const userText = input;
+    const updatedHistory = [...messages, { sender: 'user', text: userText }];
     
-    // 2. Garante um tempo mínimo de exibição do "Analisando sua dúvida..." (ex: 1.5 segundos)
-    const delayPromise = new Promise((resolve) => setTimeout(resolve, 1500));
+    setMessages(updatedHistory);
+    setInput('');
+    setIsLoading(true);
 
-    // Aguarda o backend E o tempo mínimo terminarem
-    const [response] = await Promise.all([responsePromise, delayPromise]);
-    
-    setMessages((prev) => [...prev, { sender: 'ia', text: response.text }]);
-  } catch (error) {
-    console.error('Erro ao conectar com o backend:', error);
-    setMessages((prev) => [
-      ...prev, 
-      { 
-        sender: 'ia', 
-        text: 'Ops, tive um problema de conexão com o servidor. Verifique se o backend está ligado e tente novamente.' 
+    try {
+      const response = await fetch('http://localhost:3001/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: userText })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Erro na resposta do servidor.');
       }
-    ]);
-  } finally {
-    setIsLoading(false);
-  }
-};
+      
+      setMessages((prev) => [...prev, { sender: 'ia', text: data.text }]);
+    } catch (error) {
+      console.error('Erro ao conectar com o backend:', error);
+      setMessages((prev) => [
+        ...prev, 
+        { 
+          sender: 'ia', 
+          text: 'Ops, tive um problema de conexão com o servidor. Verifique se o backend está ligado e tente novamente.' 
+        }
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -87,6 +90,12 @@ const handleSend = async (e) => {
     recognition.start();
   };
 
+  // Direciona direto para a página de Atendimento
+  const handleIniciarAtendimentoHumano = () => {
+    setShowFonoModal(false);
+    navigate('/atendimento');
+  };
+
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground antialiased font-sans">
       <Header />
@@ -115,7 +124,7 @@ const handleSend = async (e) => {
               </div>
             ))}
 
-            {/* INDICADOR DE CARREGAMENTO (IA PENSANDO) */}
+            {/* INDICADOR DE CARREGAMENTO */}
             {isLoading && (
               <div className="flex justify-start">
                 <div className="bg-slate-100 text-slate-600 p-4 rounded-2xl flex items-center gap-2">
@@ -200,10 +209,7 @@ const handleSend = async (e) => {
 
             <div className="space-y-3">
               <button 
-                onClick={() => {
-                  alert("Redirecionando para a fila de atendimento voluntário...");
-                  setShowFonoModal(false);
-                }}
+                onClick={handleIniciarAtendimentoHumano}
                 className="w-full bg-[#34a094] hover:bg-[#2d8a80] text-white font-bold py-3 px-4 rounded-xl transition-colors text-center"
               >
                 Iniciar Atendimento Humano

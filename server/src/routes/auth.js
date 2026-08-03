@@ -123,4 +123,24 @@ export async function authRoutes(server, options) {
       return reply.status(500).send({ error: 'Erro no servidor ao tentar logar.' });
     }
   });
+  // Buscar todos os usuários para o painel admin
+  server.get('/api/admin/usuarios', async (request, reply) => {
+    try {
+      // 💡 Dica: Se você usar JWT/Sessão, pegue o usuário logado do request.
+      // Exemplo de verificação simples via query param ou header se ainda não tiver JWT completo:
+      const userRole = request.headers['x-user-role']; 
+
+      if (userRole !== 'Admin') {
+        return reply.status(403).send({ error: 'Acesso negado. Requer perfil de Administrador.' });
+      }
+
+      const result = await pool.query(
+        'SELECT id, nome, email, perfil FROM usuarios ORDER BY id DESC'
+      );
+      return result.rows;
+    } catch (error) {
+      server.log.error(error);
+      return reply.status(500).send({ error: 'Erro ao buscar lista de usuários.' });
+    }
+  });
 }

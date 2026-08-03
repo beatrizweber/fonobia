@@ -1,0 +1,58 @@
+### Variaveis Globais
+@baseUrl = http://localhost:3001
+
+### 1. Healthcheck (Verifica se o servidor esta online)
+GET {{baseUrl}}/api/health
+
+###
+
+### 2. Cadastro de Paciente
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "nome": "Guilherme Dalsasso Machado",
+  "email": "guilherme_machado18@estudante.sesisenai.org.br",
+  "senha": "senhatop123",
+  "tipo": "admin",
+  "cartao_sus": "123456789012345",
+  "data_nascimento": "2009-01-13",
+  "modelo_aparelho": "Phonak Marvel",
+  "lado_aparelho": "bilateral"
+}
+
+###
+
+### 3. Cadastro de Voluntário (Fonoaudiólogo/Estagiário)
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "nome": "Dra. Maria TESTE",
+  "email": "maria@fono.com",
+  "senha": "senhaSegura123",
+  "tipo": "fonoaudiologo",
+  "registro_profissional": "CRFa 12345",
+  "instituicao": "UFSC"
+}
+
+###
+
+### 4. Login do Usuário
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "guilherme_machado18@estudante.sesisenai.org.br",
+  "senha": "senhatop123"
+}
+
+###
+
+### 5. Enviar Mensagem para o Chat (Simulado)
+POST {{baseUrl}}/api/chat
+Content-Type: application/json
+
+{
+  "message": "Meu aparelho está com o som muito baixo, o que posso fazer?"
+}

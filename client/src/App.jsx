@@ -5,6 +5,8 @@ import Faq from './pages/Faq';
 import ChatIa from './pages/ChatIa';
 import Login from './pages/Login';
 import Cadastro from './pages/Cadastro';
+import Atendimento from './pages/Atendimento';
+import Admin from './pages/Admin'
 
 export default function App() {
   return (
@@ -15,6 +17,8 @@ export default function App() {
         <Route path="/chat" element={<ChatIa />} />
         <Route path="/login" element={<Login />} />
         <Route path="/cadastro" element={<Cadastro />} />
+        <Route path="/atendimento" element={<Atendimento />} />
+        <Route path="/admin" element={<Admin />} />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

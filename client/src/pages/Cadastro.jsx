@@ -1,10 +1,12 @@
 // client/src/pages/Cadastro.jsx
 import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { api } from '../services/api';
 
 export default function Cadastro() {
+  const navigate = useNavigate();
+
   // Estado único para armazenar todos os campos do formulário
   const [formData, setFormData] = useState({
     nome: '',
@@ -38,15 +40,24 @@ export default function Cadastro() {
     setLoading(true);
 
     try {
-      // Chama a função api.register() enviando o objeto completo
-      const resposta = await api.register(formData);
-      
-      setFeedback({ 
-        tipo: 'sucesso', 
-        mensagem: 'Cadastro realizado com sucesso! Você já pode fazer login.' 
+      const response = await fetch('http://localhost:3001/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
       });
 
-      // Limpa o formulário em caso de sucesso
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Erro ao realizar o cadastro.');
+      }
+
+      setFeedback({ 
+        tipo: 'sucesso', 
+        mensagem: 'Cadastro realizado com sucesso! Redirecionando para o login...' 
+      });
+
+      // Limpa o formulário
       setFormData({
         nome: '',
         email: '',
@@ -59,6 +70,11 @@ export default function Cadastro() {
         registro_profissional: '',
         instituicao: ''
       });
+
+      // Redireciona para a tela de login após 2 segundos
+      setTimeout(() => {
+        navigate('/login');
+      }, 2000);
 
     } catch (erro) {
       setFeedback({ 
@@ -208,7 +224,7 @@ export default function Cadastro() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {formData.tipo === 'fonoaudiologo' ? 'Registro Profissional (CRFa)' : 'Comprovante / Matrícula Academic'}
+                    {formData.tipo === 'fonoaudiologo' ? 'Registro Profissional (CRFa)' : 'Comprovante / Matrícula Acadêmica'}
                   </label>
                   <input
                     type="text"
@@ -253,6 +269,15 @@ export default function Cadastro() {
               {loading ? 'Cadastrando...' : 'Finalizar Cadastro'}
             </button>
           </form>
+
+          <div className="text-center pt-4 border-t border-gray-100 mt-6">
+            <p className="text-sm text-gray-600">
+              Já tem uma conta?{' '}
+              <Link to="/login" className="font-bold text-teal-600 hover:underline">
+                Faça login
+              </Link>
+            </p>
+          </div>
 
         </div>
       </main>

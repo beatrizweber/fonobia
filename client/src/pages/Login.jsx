@@ -1,10 +1,46 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { LogIn } from 'lucide-react';
 
 export default function Login() {
+  const [email, setEmail] = useState('');
+  const [senha, setSenha] = useState('');
+  const [erro, setErro] = useState('');
+  const [carregando, setCarregando] = useState(false);
+  const navigate = useNavigate();
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setErro('');
+    setCarregando(true);
+
+    try {
+      const response = await fetch('http://localhost:3001/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, senha })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Falha ao realizar login.');
+      }
+
+      // Salva os dados do usuário autenticado no navegador
+      localStorage.setItem('usuario', JSON.stringify(data.usuario));
+
+      // Redireciona para o chat ou página principal
+      navigate('/chat');
+    } catch (err) {
+      setErro(err.message);
+    } finally {
+      setCarregando(false);
+    }
+  };
+
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground antialiased font-sans">
       <Header />
@@ -22,14 +58,24 @@ export default function Login() {
             </p>
           </div>
 
-          <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
+          {/* MENSAGEM DE ERRO (CASO EXISTA) */}
+          {erro && (
+            <div className="p-3 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm font-medium text-center">
+              {erro}
+            </div>
+          )}
+
+          <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-1">
                 E-mail
               </label>
               <input
                 type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 placeholder="seu@email.com"
+                required
                 className="w-full p-3 border border-slate-200 rounded-xl text-base focus:outline-none focus:border-[#34a094]"
               />
             </div>
@@ -40,16 +86,21 @@ export default function Login() {
               </label>
               <input
                 type="password"
+                value={senha}
+                onChange={(e) => setSenha(e.target.value)}
                 placeholder="••••••••"
+                required
                 className="w-full p-3 border border-slate-200 rounded-xl text-base focus:outline-none focus:border-[#34a094]"
               />
             </div>
 
             <button
               type="submit"
-              className="w-full bg-[#34a094] hover:bg-[#2d8a80] text-white font-bold py-3.5 rounded-xl transition-colors shadow-sm flex items-center justify-center gap-2 mt-6 text-base"
+              disabled={carregando}
+              className="w-full bg-[#34a094] hover:bg-[#2d8a80] disabled:opacity-50 text-white font-bold py-3.5 rounded-xl transition-colors shadow-sm flex items-center justify-center gap-2 mt-6 text-base"
             >
-              <LogIn className="w-5 h-5" /> Entrar
+              <LogIn className="w-5 h-5" /> 
+              {carregando ? 'Entrando...' : 'Entrar'}
             </button>
           </form>
 
@@ -64,7 +115,7 @@ export default function Login() {
         </div>
       </main>
 
-      {/* Footer minimalista sem o link de cadastro */}
+      {/* Footer minimalista */}
       <Footer minimal={true} />
     </div>
   );
