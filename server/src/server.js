@@ -4,6 +4,9 @@
   import pg from 'pg';
   import { authRoutes } from './routes/auth.js';
   import { chatRoutes } from './routes/chat.js';
+  import { atendimentosRoutes } from './routes/atendimentos.js';
+  import { adminRoutes } from './routes/admin.js';
+  import { perfilRoutes } from './routes/perfil.js';
 
   dotenv.config();
 
@@ -20,13 +23,31 @@
 
   const server = Fastify();
 
+  // Permite PATCH/POST com Content-Type: application/json e corpo vazio
+  // (ex: aprovar/rejeitar voluntário, que só precisam do :id da URL)
+  server.addContentTypeParser('application/json', { parseAs: 'string' }, (request, body, done) => {
+    if (!body) {
+      done(null, {});
+      return;
+    }
+    try {
+      done(null, JSON.parse(body));
+    } catch (err) {
+      err.statusCode = 400;
+      done(err, undefined);
+    }
+  });
+
   await server.register(cors, {
     origin: ['http://localhost:5173', 'http://localhost:3000'],
-    methods: ['GET', 'POST', 'PUT', 'DELETE']
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH']
   });
 
   await server.register(authRoutes);
   await server.register(chatRoutes);
+  await server.register(atendimentosRoutes);
+  await server.register(adminRoutes);
+  await server.register(perfilRoutes);
 
   server.get('/api/health', async () => {
     return { status: 'OK', message: 'Backend do AjudaÁudio está no ar!' };

@@ -141,3 +141,51 @@ CREATE TABLE mensagem (
 
 -- Agiliza a busca por todas as mensagens de uma sessão (a query mais frequente do sistema)
 CREATE INDEX idx_mensagem_sessao_id ON mensagem (sessao_id);
+
+--PARTE 2 - Executar Separado =================================
+
+-- ============================================================
+-- Nível de facilidade de uso da plataforma reportado pelo paciente
+-- ============================================================
+CREATE TYPE facilidade_site_enum AS ENUM (
+    'dificil',
+    'razoavel',
+    'facil'
+);
+
+
+-- ============================================================
+-- TABELA: avaliacao
+-- Avaliação expressa preenchida pelo paciente ao final de uma sessão
+-- com voluntário. Uma avaliação por sessão (chave primária = sessao_id).
+-- ============================================================
+CREATE TABLE avaliacao (
+    sessao_id       UUID                    PRIMARY KEY REFERENCES sessao(id) ON DELETE CASCADE,
+    -- CASCADE: apagar a sessão apaga a avaliação junto
+    nota_fono       SMALLINT                NOT NULL CHECK (nota_fono BETWEEN 1 AND 5),
+    facilidade_site facilidade_site_enum    NOT NULL,
+    comentario      TEXT,                                 -- opcional
+    criado_em       TIMESTAMPTZ             NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+--PARTE 3 - Executar Separado =================================
+
+-- ============================================================
+-- Substitui o boolean "aprovado" por um estado de aprovação com
+-- 3 valores. Projeto social: nunca apagamos o cadastro de um
+-- voluntário rejeitado, só marcamos o status — o histórico e os
+-- dados da pessoa continuam no banco.
+-- ============================================================
+CREATE TYPE status_aprovacao_enum AS ENUM (
+    'pendente',   -- aguardando análise do admin
+    'aprovado',   -- CRFa/matrícula validada, pode atender
+    'rejeitado'   -- cadastro recusado, mas mantido no histórico
+);
+
+ALTER TABLE voluntario
+    ADD COLUMN status_aprovacao status_aprovacao_enum NOT NULL DEFAULT 'pendente';
+
+-- Migra quem já estava aprovado antes dessa mudança
+UPDATE voluntario SET status_aprovacao = 'aprovado' WHERE aprovado = TRUE;
+
+ALTER TABLE voluntario DROP COLUMN aprovado;

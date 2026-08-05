@@ -11,12 +11,12 @@ POST {{baseUrl}}/api/auth/register
 Content-Type: application/json
 
 {
-  "nome": "Guilherme Dalsasso Machado",
-  "email": "guilherme_machado18@estudante.sesisenai.org.br",
+  "nome": "TESTE",
+  "email": "AS2TEESTE@estudante.sesisenai.org.br",
   "senha": "senhatop123",
-  "tipo": "admin",
+  "tipo": "paciente",
   "cartao_sus": "123456789012345",
-  "data_nascimento": "2009-01-13",
+  "data_nascimento": "2009-01-14",
   "modelo_aparelho": "Phonak Marvel",
   "lado_aparelho": "bilateral"
 }
@@ -63,4 +63,5 @@ GET {{baseUrl}}/usuarios
 
 ###
 
-DELETE {{baseUrl}}/usuarios/e403c1b9-4223-4934-8a5b-7aab5537e882
+### Deletar id
+DELETE {{baseUrl}}/usuarios/

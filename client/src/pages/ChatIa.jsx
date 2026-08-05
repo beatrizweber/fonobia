@@ -1,8 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { MessageSquare, Mic, Send, HelpCircle, X, UserCheck, Loader2 } from 'lucide-react';
+import {
+  MessageSquare, Mic, Send, HelpCircle, X, UserCheck, Loader2,
+  BatteryCharging, AlertCircle, Sparkles, Smartphone, Volume2, Ear
+} from 'lucide-react';
+
+// Mesmos temas e mesmas perguntas usados na Home e em /duvidas —
+// clicar já manda a pergunta pronta pra IA.
+const PERGUNTAS_RAPIDAS = [
+  { icon: BatteryCharging, label: 'Como carregar', pergunta: 'Como carregar o aparelho auditivo?' },
+  { icon: AlertCircle, label: 'Não liga', pergunta: 'Meu aparelho não liga, o que faço?' },
+  { icon: Sparkles, label: 'Como limpar', pergunta: 'Como limpar o molde do aparelho?' },
+  { icon: Smartphone, label: 'Ligar no celular', pergunta: 'Como conectar o aparelho ao celular?' },
+  { icon: Volume2, label: 'Está apitando', pergunta: 'Meu aparelho está apitando, o que fazer?' },
+  { icon: Ear, label: 'Como colocar', pergunta: 'Como colocar o aparelho na orelha?' },
+];
+
+const MENSAGEM_INICIAL = {
+  sender: 'ia',
+  text: 'Olá! Sou a assistente do **AjudaÁudio**. Conte sua dúvida sobre seu aparelho auditivo do SUS que vou te ajudar. Você pode escrever ou tocar no microfone.'
+};
 
 // 🟢 Função para converter **texto** em negrito nativo sem bibliotecas extras
 const formatarTextoComNegrito = (texto) => {
@@ -25,34 +44,59 @@ const formatarTextoComNegrito = (texto) => {
 export default function ChatIa() {
   const navigate = useNavigate();
 
-  const [messages, setMessages] = useState([
-    {
-      sender: 'ia',
-      text: 'Olá! Sou a assistente do **AjudaÁudio**. Conte sua dúvida sobre seu aparelho auditivo do SUS que vou te ajudar. Você pode escrever ou tocar no microfone.'
-    }
-  ]);
+  const [messages, setMessages] = useState([MENSAGEM_INICIAL]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [showFonoModal, setShowFonoModal] = useState(false);
 
-  // Função para enviar mensagem ao Backend Fastify via fetch
-  const handleSend = async (e) => {
-    e?.preventDefault();
-    if (!input.trim() || isLoading) return;
+  // Se estiver logado como paciente, carrega o histórico salvo da conversa com a IA
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const usuario = JSON.parse(localStorage.getItem('usuario') || 'null');
+    if (!token || usuario?.tipo !== 'paciente') return;
 
-    const userText = input;
+    (async () => {
+      try {
+        const response = await fetch('http://localhost:3001/api/chat/historico', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!response.ok) return;
+
+        const historico = await response.json();
+        if (historico.length > 0) {
+          setMessages([
+            MENSAGEM_INICIAL,
+            ...historico.map((m) => ({ sender: m.remetente === 'ia' ? 'ia' : 'user', text: m.conteudo }))
+          ]);
+        }
+      } catch (err) {
+        console.error('Erro ao carregar histórico da IA:', err);
+      }
+    })();
+  }, []);
+
+  // Função para enviar mensagem ao Backend Fastify via fetch
+  const handleSend = async (e, textoForcado) => {
+    e?.preventDefault();
+    const userText = textoForcado || input;
+    if (!userText.trim() || isLoading) return;
+
     const updatedHistory = [...messages, { sender: 'user', text: userText }];
-    
+
     setMessages(updatedHistory);
     setInput('');
     setIsLoading(true);
 
     try {
+      const token = localStorage.getItem('token');
       const response = await fetch('http://localhost:3001/api/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userText })
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ message: userText, historico: updatedHistory.slice(0, -1) })
       });
 
       const data = await response.json();
@@ -60,20 +104,24 @@ export default function ChatIa() {
       if (!response.ok) {
         throw new Error(data.error || 'Erro na resposta do servidor.');
       }
-      
+
       setMessages((prev) => [...prev, { sender: 'ia', text: data.text }]);
     } catch (error) {
       console.error('Erro ao conectar com o backend:', error);
       setMessages((prev) => [
-        ...prev, 
-        { 
-          sender: 'ia', 
-          text: 'Ops, tive um problema de conexão com o servidor. Verifique se o backend está ligado e tente novamente.' 
+        ...prev,
+        {
+          sender: 'ia',
+          text: 'Ops, tive um problema de conexão com o servidor. Verifique se o backend está ligado e tente novamente.'
         }
       ]);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handlePerguntaRapida = (pergunta) => {
+    handleSend(null, pergunta);
   };
 
   const handleKeyDown = (e) => {
@@ -125,6 +173,24 @@ export default function ChatIa() {
             <MessageSquare className="h-8 w-8 text-[#34a094]" />
             <h1 className="text-3xl font-extrabold text-slate-900">Pergunte à IA</h1>
           </div>
+
+          {/* PERGUNTAS RÁPIDAS — só no início, some depois que a conversa começa */}
+          {messages.length === 1 && (
+            <div className="mt-5 flex flex-wrap gap-2">
+              {PERGUNTAS_RAPIDAS.map(({ icon: Icon, label, pergunta }) => (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => handlePerguntaRapida(pergunta)}
+                  disabled={isLoading}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full border border-slate-200 bg-white text-sm font-semibold text-slate-700 hover:border-[#34a094] hover:text-[#34a094] transition-colors disabled:opacity-50"
+                >
+                  <Icon className="h-4 w-4 text-[#34a094]" />
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* HISTÓRICO DE MENSAGENS */}
           <div className="mt-6 flex-1 space-y-6 overflow-y-auto pb-4">

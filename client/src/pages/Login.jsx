@@ -29,11 +29,19 @@ export default function Login() {
         throw new Error(data.error || 'Falha ao realizar login.');
       }
 
-      // 1. Salva os dados do usuário autenticado no navegador
+      // 1. Salva os dados do usuário e o token de autenticação no navegador
       localStorage.setItem('usuario', JSON.stringify(data.usuario));
+      localStorage.setItem('token', data.token);
 
-      // 🟢 2. Redireciona para a Home (/) após logar
-      navigate('/');
+      // 2. Redireciona conforme o perfil do usuário
+      const tipo = (data.usuario?.tipo || '').toLowerCase();
+      if (tipo === 'admin') {
+        navigate('/paineladmin');
+      } else if (tipo === 'fonoaudiologo' || tipo === 'estagiario') {
+        navigate('/painelfono');
+      } else {
+        navigate('/atendimento');
+      }
     } catch (err) {
       setErro(err.message);
     } finally {

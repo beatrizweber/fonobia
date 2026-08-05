@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { Shield, Mail, UserCheck, ArrowLeft, Stethoscope, User, ShieldAlert, Calendar } from 'lucide-react';
+import { Shield, Mail, UserCheck, ArrowLeft, Stethoscope, User, ShieldAlert, Calendar, UserCog } from 'lucide-react';
 
 export default function Admin() {
   const [usuarios, setUsuarios] = useState([]);
@@ -11,7 +11,6 @@ export default function Admin() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // 🔒 1. Trava de Segurança Flexível (Checa tipo OU perfil, ignorando maiúsculas)
     const usuarioSalvo = JSON.parse(localStorage.getItem('usuario') || '{}');
     const tipoUsuario = (usuarioSalvo?.tipo || usuarioSalvo?.perfil || '').toLowerCase();
 
@@ -21,12 +20,11 @@ export default function Admin() {
       return;
     }
 
-    // 2. Busca a lista enviando o perfil/tipo no cabeçalho
     async function carregarUsuarios() {
       try {
         const response = await fetch('http://localhost:3001/api/admin/usuarios', {
           headers: {
-            'x-user-role': tipoUsuario
+            Authorization: `Bearer ${localStorage.getItem('token')}`
           }
         });
         const data = await response.json();
@@ -47,10 +45,29 @@ export default function Admin() {
     carregarUsuarios();
   }, [navigate]);
 
-  // 📦 Agrupa os usuários pelo tipo/perfil para montar as caixas separadas
+  const handleTornarAdmin = async (id, nome) => {
+    if (!window.confirm(`Tornar "${nome}" um administrador? Essa pessoa passará a ter acesso total ao painel administrativo.`)) return;
+
+    try {
+      const response = await fetch(`http://localhost:3001/api/admin/usuarios/${id}/tornar-admin`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+
+      if (response.ok) {
+        setUsuarios(prev => prev.map(u => (u.id === id ? { ...u, tipo: 'admin' } : u)));
+      } else {
+        const data = await response.json();
+        alert(data.error || 'Não foi possível tornar este usuário administrador.');
+      }
+    } catch (err) {
+      console.error('Erro ao tornar usuário admin:', err);
+      alert('Não foi possível se conectar ao servidor.');
+    }
+  };
+
   const usuariosPorPerfil = usuarios.reduce((acc, user) => {
     const perfilRaw = user.tipo || user.perfil || 'Paciente / Usuário';
-    // Capitaliza a primeira letra para exibição bonita no título da caixa
     const perfilFormatado = perfilRaw.charAt(0).toUpperCase() + perfilRaw.slice(1);
 
     if (!acc[perfilFormatado]) {
@@ -60,7 +77,6 @@ export default function Admin() {
     return acc;
   }, {});
 
-  // 🎨 Estilos e ícones personalizados para cada tipo de caixa
   const getPerfilStyle = (perfil) => {
     const perfilLower = perfil.toLowerCase();
     if (perfilLower.includes('fono')) {
@@ -87,7 +103,6 @@ export default function Admin() {
     };
   };
 
-  // 📅 Função para formatar a data vinda do banco de dados (ex: 2026-08-03T15:00:00.000Z -> 03/08/2026)
   const formatarData = (dataString) => {
     if (!dataString) return 'Data não reg.';
     const data = new Date(dataString);
@@ -101,7 +116,6 @@ export default function Admin() {
       <Header />
 
       <main className="flex-1 container mx-auto max-w-5xl px-4 py-10">
-        {/* Cabeçalho da página */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
             <div className="bg-[#34a094] p-3 rounded-xl text-white shadow-md">
@@ -126,7 +140,6 @@ export default function Admin() {
           </button>
         </div>
 
-        {/* Estados de carregamento e erro */}
         {loading ? (
           <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-500 shadow-sm">
             Carregando dados dos usuários...
@@ -140,74 +153,89 @@ export default function Admin() {
             Nenhum usuário cadastrado até o momento.
           </div>
         ) : (
-          /* Renderização das Caixas por Perfil */
           <div className="space-y-8">
-            {Object.keys(usuariosPorPerfil).map((perfil) => {
-              const estilo = getPerfilStyle(perfil);
-              const lista = usuariosPorPerfil[perfil];
+            {/* 🟢 ORDENAÇÃO APLICADA AQUI */}
+            {Object.keys(usuariosPorPerfil)
+              .sort((a, b) => {
+                const ordem = { admin: 1, fonoaudiologo: 2, fono: 2, estagiario: 3, paciente: 4 };
+                const pesoA = ordem[a.toLowerCase()] || 99;
+                const pesoB = ordem[b.toLowerCase()] || 99;
+                return pesoA - pesoB;
+              })
+              .map((perfil) => {
+                const estilo = getPerfilStyle(perfil);
+                const lista = usuariosPorPerfil[perfil];
 
-              return (
-                <div
-                  key={perfil}
-                  className={`bg-white rounded-2xl border ${estilo.borderColor} shadow-sm overflow-hidden`}
-                >
-                  {/* Cabeçalho da Caixa */}
-                  <div className={`p-5 border-b border-slate-100 flex items-center justify-between ${estilo.headerBg}`}>
-                    <div className="flex items-center gap-3">
-                      {estilo.icon}
-                      <h2 className="text-lg font-bold text-slate-800">
-                        {perfil}
-                      </h2>
+                return (
+                  <div
+                    key={perfil}
+                    className={`bg-white rounded-2xl border ${estilo.borderColor} shadow-sm overflow-hidden`}
+                  >
+                    <div className={`p-5 border-b border-slate-100 flex items-center justify-between ${estilo.headerBg}`}>
+                      <div className="flex items-center gap-3">
+                        {estilo.icon}
+                        <h2 className="text-lg font-bold text-slate-800">
+                          {perfil}
+                        </h2>
+                      </div>
+                      <span className={`px-3 py-1 rounded-full text-xs font-bold border ${estilo.badge}`}>
+                        {lista.length} {lista.length === 1 ? 'usuário' : 'usuários'}
+                      </span>
                     </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold border ${estilo.badge}`}>
-                      {lista.length} {lista.length === 1 ? 'usuário' : 'usuários'}
-                    </span>
-                  </div>
 
-                  {/* Tabela de Usuários da Caixa */}
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                      <thead>
-                        <tr className="bg-slate-50 text-slate-500 text-xs uppercase font-bold tracking-wider border-b border-slate-100">
-                          <th className="py-3 px-6">ID</th>
-                          <th className="py-3 px-6">Nome Completo</th>
-                          <th className="py-3 px-6">E-mail</th>
-                          <th className="py-3 px-6">Data de Criação</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100 text-slate-700 text-sm">
-                        {lista.map((user) => (
-                          <tr key={user.id} className="hover:bg-slate-50/80 transition-colors">
-                            <td className="py-4 px-6 font-mono text-xs font-semibold text-slate-400">
-                              #{user.id}
-                            </td>
-                            <td className="py-4 px-6 font-bold text-slate-800">
-                              <div className="flex items-center gap-2">
-                                <UserCheck className="w-4 h-4 text-[#34a094]" />
-                                {user.nome}
-                              </div>
-                            </td>
-                            <td className="py-4 px-6 text-slate-600">
-                              <div className="flex items-center gap-2">
-                                <Mail className="w-4 h-4 text-slate-400" />
-                                {user.email}
-                              </div>
-                            </td>
-                            {/* 🟢 CÉLULA DA DATA DE CRIAÇÃO ADICIONADA */}
-                            <td className="py-4 px-6 text-slate-500 font-medium">
-                              <div className="flex items-center gap-2 text-xs">
-                                <Calendar className="w-4 h-4 text-slate-400" />
-                                {formatarData(user.criado_em || user.created_at || user.data_criacao)}
-                              </div>
-                            </td>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="bg-slate-50 text-slate-500 text-xs uppercase font-bold tracking-wider border-b border-slate-100">
+                            <th className="py-3 px-6">ID</th>
+                            <th className="py-3 px-6">Nome Completo</th>
+                            <th className="py-3 px-6">E-mail</th>
+                            <th className="py-3 px-6">Data de Criação</th>
+                            <th className="py-3 px-6 text-right">Ação</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 text-slate-700 text-sm">
+                          {lista.map((user) => (
+                            <tr key={user.id} className="hover:bg-slate-50/80 transition-colors">
+                              <td className="py-4 px-6 font-mono text-xs font-semibold text-slate-400">
+                                #{user.id}
+                              </td>
+                              <td className="py-4 px-6 font-bold text-slate-800">
+                                <div className="flex items-center gap-2">
+                                  <UserCheck className="w-4 h-4 text-[#34a094]" />
+                                  {user.nome}
+                                </div>
+                              </td>
+                              <td className="py-4 px-6 text-slate-600">
+                                <div className="flex items-center gap-2">
+                                  <Mail className="w-4 h-4 text-slate-400" />
+                                  {user.email}
+                                </div>
+                              </td>
+                              <td className="py-4 px-6 text-slate-500 font-medium">
+                                <div className="flex items-center gap-2 text-xs">
+                                  <Calendar className="w-4 h-4 text-slate-400" />
+                                  {formatarData(user.criado_em || user.created_at || user.data_criacao)}
+                                </div>
+                              </td>
+                              <td className="py-4 px-6 text-right">
+                                {(user.tipo || '').toLowerCase() !== 'admin' && (
+                                  <button
+                                    onClick={() => handleTornarAdmin(user.id, user.nome)}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded-lg text-xs font-bold transition-colors"
+                                  >
+                                    <UserCog className="w-3.5 h-3.5" /> Tornar Admin
+                                  </button>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
           </div>
         )}
       </main>

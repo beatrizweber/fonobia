@@ -1,25 +1,34 @@
 import { pool } from '../server.js';
 import bcrypt from 'bcryptjs';
+import { verificarToken, exigirTipos, gerarToken } from '../middleware/auth.js';
+
+// Tipos que podem ser criados pelo formulário público de cadastro.
+// "admin" propositalmente de fora — conta admin não se cria por aqui.
+const TIPOS_CADASTRO_PUBLICO = ['paciente', 'fonoaudiologo', 'estagiario'];
 
 export async function authRoutes(server, options) {
-  
+
   // 1. ROTA DE CADASTRO
   server.post('/api/auth/register', async (request, reply) => {
-    const { 
-      nome, 
-      email, 
-      senha, 
-      tipo, // 'paciente', 'fonoaudiologo', 'estagiario', 'admin'
-      cartao_sus, 
-      data_nascimento, 
-      modelo_aparelho, 
+    const {
+      nome,
+      email,
+      senha,
+      tipo, // 'paciente', 'fonoaudiologo' ou 'estagiario'
+      cartao_sus,
+      data_nascimento,
+      modelo_aparelho,
       lado_aparelho,
-      registro_profissional, 
-      instituicao 
+      registro_profissional,
+      instituicao
     } = request.body || {};
 
     if (!nome || !email || !senha || !tipo) {
       return reply.status(400).send({ error: 'Nome, e-mail, senha e tipo são obrigatórios.' });
+    }
+
+    if (!TIPOS_CADASTRO_PUBLICO.includes(tipo.toLowerCase())) {
+      return reply.status(400).send({ error: 'Tipo de cadastro inválido.' });
     }
 
     const client = await pool.connect();
@@ -109,9 +118,12 @@ export async function authRoutes(server, options) {
 
       delete usuario.senha_hash;
 
+      const token = gerarToken(usuario);
+
       return reply.send({
         message: 'Login realizado com sucesso!',
-        usuario
+        usuario,
+        token
       });
 
     } catch (error) {
@@ -121,19 +133,12 @@ export async function authRoutes(server, options) {
   });
 
   // 3. ROTA BUSCAR TODOS OS USUÁRIOS (PAINEL ADMIN)
-  server.get('/api/admin/usuarios', async (request, reply) => {
+  server.get('/api/admin/usuarios', { preHandler: [verificarToken, exigirTipos('admin')] }, async (request, reply) => {
     try {
-      const userRole = (request.headers['x-user-role'] || '').toLowerCase(); 
-
-      if (userRole !== 'admin') {
-        return reply.status(403).send({ error: 'Acesso negado. Requer perfil de Administrador.' });
-      }
-
-      // Consulta ajustada com a tabela 'usuario' e os campos corretos
       const result = await pool.query(
         'SELECT id, nome, email, tipo, criado_em FROM usuario ORDER BY id DESC'
       );
-      
+
       return reply.send(result.rows);
     } catch (error) {
       server.log.error(error);
