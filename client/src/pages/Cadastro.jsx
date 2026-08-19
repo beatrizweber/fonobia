@@ -3,6 +3,48 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import { API_URL } from '../config';
+
+// Pontuação simples (0-4) baseada em critérios comuns de força de senha —
+// não precisa de biblioteca externa pra dar um retorno visual útil.
+function calcularForcaSenha(senha) {
+  if (!senha) return 0;
+  let pontos = 0;
+  if (senha.length >= 6) pontos++;
+  if (senha.length >= 10) pontos++;
+  if (/[a-z]/.test(senha) && /[A-Z]/.test(senha)) pontos++;
+  if (/\d/.test(senha)) pontos++;
+  if (/[^A-Za-z0-9]/.test(senha)) pontos++;
+  return Math.min(pontos, 4);
+}
+
+const NIVEIS_FORCA = [
+  { label: 'Muito fraca', cor: 'bg-red-500', texto: 'text-red-600' },
+  { label: 'Fraca', cor: 'bg-orange-500', texto: 'text-orange-600' },
+  { label: 'Razoável', cor: 'bg-amber-500', texto: 'text-amber-600' },
+  { label: 'Forte', cor: 'bg-emerald-500', texto: 'text-emerald-600' },
+  { label: 'Muito forte', cor: 'bg-emerald-600', texto: 'text-emerald-700' },
+];
+
+function MedidorForcaSenha({ senha }) {
+  if (!senha) return null;
+  const forca = calcularForcaSenha(senha);
+  const nivel = NIVEIS_FORCA[forca];
+
+  return (
+    <div className="mt-1.5">
+      <div className="flex gap-1">
+        {[0, 1, 2, 3].map((i) => (
+          <div
+            key={i}
+            className={`h-1.5 flex-1 rounded-full transition-colors ${i < forca ? nivel.cor : 'bg-gray-200'}`}
+          />
+        ))}
+      </div>
+      <p className={`text-xs font-semibold mt-1 ${nivel.texto}`}>{nivel.label}</p>
+    </div>
+  );
+}
 
 export default function Cadastro() {
   const navigate = useNavigate();
@@ -25,6 +67,8 @@ export default function Cadastro() {
     instituicao: ''
   });
 
+  const [confirmarSenha, setConfirmarSenha] = useState('');
+  const [aceitaTermos, setAceitaTermos] = useState(false);
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState({ tipo: '', mensagem: '' });
 
@@ -37,10 +81,21 @@ export default function Cadastro() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setFeedback({ tipo: '', mensagem: '' });
+
+    if (formData.senha !== confirmarSenha) {
+      setFeedback({ tipo: 'erro', mensagem: 'As senhas não coincidem. Verifique e tente novamente.' });
+      return;
+    }
+
+    if (!aceitaTermos) {
+      setFeedback({ tipo: 'erro', mensagem: 'Você precisa concordar com a Política de Privacidade para se cadastrar.' });
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:3001/api/auth/register', {
+      const response = await fetch(`${API_URL}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
@@ -52,9 +107,9 @@ export default function Cadastro() {
         throw new Error(data.error || 'Erro ao realizar o cadastro.');
       }
 
-      setFeedback({ 
-        tipo: 'sucesso', 
-        mensagem: 'Cadastro realizado com sucesso! Redirecionando para o login...' 
+      setFeedback({
+        tipo: 'sucesso',
+        mensagem: data.message || 'Cadastro realizado com sucesso! Confira seu e-mail para confirmar a conta.'
       });
 
       // Limpa o formulário
@@ -70,11 +125,14 @@ export default function Cadastro() {
         registro_profissional: '',
         instituicao: ''
       });
+      setConfirmarSenha('');
+      setAceitaTermos(false);
 
-      // Redireciona para a tela de login após 2 segundos
+      // Redireciona para a tela de login (dá tempo de ler o aviso pra
+      // conferir o e-mail antes de tentar entrar)
       setTimeout(() => {
         navigate('/login');
-      }, 2000);
+      }, 3500);
 
     } catch (erro) {
       setFeedback({ 
@@ -149,11 +207,33 @@ export default function Cadastro() {
                   type="password"
                   name="senha"
                   required
+                  minLength={6}
                   value={formData.senha}
                   onChange={handleChange}
                   placeholder="••••••••"
                   className="w-full border border-gray-300 rounded-lg p-3 text-gray-800 focus:ring-2 focus:ring-teal-500 outline-none"
                 />
+                <MedidorForcaSenha senha={formData.senha} />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Confirmar Senha</label>
+                <input
+                  type="password"
+                  name="confirmarSenha"
+                  required
+                  value={confirmarSenha}
+                  onChange={(e) => setConfirmarSenha(e.target.value)}
+                  placeholder="••••••••"
+                  className={`w-full border rounded-lg p-3 text-gray-800 focus:ring-2 outline-none ${
+                    confirmarSenha && confirmarSenha !== formData.senha
+                      ? 'border-red-300 focus:ring-red-400'
+                      : 'border-gray-300 focus:ring-teal-500'
+                  }`}
+                />
+                {confirmarSenha && confirmarSenha !== formData.senha && (
+                  <p className="text-xs text-red-600 mt-1">As senhas não coincidem.</p>
+                )}
               </div>
             </div>
 
@@ -230,6 +310,7 @@ export default function Cadastro() {
                     type="text"
                     name="registro_profissional"
                     required
+                    maxLength={50}
                     value={formData.registro_profissional}
                     onChange={handleChange}
                     placeholder={formData.tipo === 'fonoaudiologo' ? 'Ex: CRFa 2-12345' : 'Ex: Matrícula 202400123'}
@@ -260,10 +341,28 @@ export default function Cadastro() {
               </div>
             )}
 
+            {/* Aceite da Política de Privacidade */}
+            <div className="flex items-start gap-2.5 pt-2">
+              <input
+                type="checkbox"
+                id="aceitaTermos"
+                checked={aceitaTermos}
+                onChange={(e) => setAceitaTermos(e.target.checked)}
+                className="mt-0.5 w-4 h-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500 shrink-0"
+              />
+              <label htmlFor="aceitaTermos" className="text-sm text-gray-600 leading-snug">
+                Eu li e concordo com a{' '}
+                <Link to="/privacidade" target="_blank" className="font-semibold text-teal-600 hover:underline">
+                  Política de Privacidade e Termos de Uso
+                </Link>
+                {' '}do AjudaÁudio.
+              </label>
+            </div>
+
             {/* Botão de Envio */}
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !aceitaTermos}
               className="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors shadow-md disabled:bg-gray-400 mt-6"
             >
               {loading ? 'Cadastrando...' : 'Finalizar Cadastro'}

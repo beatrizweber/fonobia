@@ -7,6 +7,28 @@
   --color-brand-bg: #f8fafb;
 }
 
+/* Trava scroll horizontal da PÁGINA — containers que precisam rolar de
+   lado (tabelas do admin, etc.) continuam funcionando porque eles têm seu
+   próprio overflow-x-auto local, isso aqui só evita que o body inteiro
+   fique mais largo que a tela em celulares. */
+html, body {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+/* Precisa estar em @layer base: CSS fora de camada sempre vence CSS em
+   camada no Tailwind v4 (que coloca h-9/w-auto/etc em @layer utilities),
+   não importa a especificidade. Sem isso, essa regra anulava silenciosamente
+   qualquer classe de tamanho do Tailwind em <img>/<svg> (foi o que quebrou
+   as logos de patrocinador). Em @layer base ela só serve de valor padrão,
+   e perde pra qualquer classe utilitária explícita, como deveria. */
+@layer base {
+  img, video, svg {
+    max-width: 100%;
+    height: auto;
+  }
+}
+
 :root {
   --primary: 173.3 50.9% 41.6%;
   --primary-foreground: 210 40% 98%;

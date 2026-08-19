@@ -1,13 +1,18 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { Headphones, Send, Clock, MessageSquare, CheckCircle2, XCircle, FileText, AlertCircle, LogOut, User, ShieldCheck, Filter, ChevronRight} from 'lucide-react';
+import { Headphones, Send, Clock, MessageSquare, CheckCircle2, XCircle, FileText, AlertCircle, LogOut, User, ShieldCheck, Filter, ChevronRight, Paperclip, X, Image as ImageIcon, Video } from 'lucide-react';
+import { API_URL } from '../config';
+
+const TAMANHO_MAX_ANEXO = 25 * 1024 * 1024; // 25MB
 
 export default function Atendimento() {
   const navigate = useNavigate();
+  const fileInputRef = useRef(null);
   const [usuario, setUsuario] = useState(null);
   const [mensagemInicial, setMensagemInicial] = useState('');
+  const [anexo, setAnexo] = useState(null);
   const [chamados, setChamados] = useState([]);
   const [filtroStatus, setFiltroStatus] = useState('todos'); // 'todos' | 'abertos' | 'encerrados'
   const [loading, setLoading] = useState(true);
@@ -34,7 +39,7 @@ export default function Atendimento() {
 
   async function carregarChamados(pacienteId) {
     try {
-      const response = await fetch(`http://localhost:3001/api/atendimentos/paciente/${pacienteId}`, {
+      const response = await fetch(`${API_URL}/api/atendimentos/paciente/${pacienteId}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       if (response.ok) {
@@ -46,6 +51,25 @@ export default function Atendimento() {
     } finally {
       setLoading(false);
     }
+  }
+
+  function handleSelecionarAnexo(e) {
+    const arquivo = e.target.files?.[0];
+    e.target.value = ''; // permite escolher o mesmo arquivo de novo depois
+    if (!arquivo) return;
+
+    const ehImagemOuVideo = arquivo.type.startsWith('image/') || arquivo.type.startsWith('video/');
+    if (!ehImagemOuVideo) {
+      setNotificacao({ tipo: 'erro', msg: 'Só é possível anexar foto ou vídeo.' });
+      return;
+    }
+    if (arquivo.size > TAMANHO_MAX_ANEXO) {
+      setNotificacao({ tipo: 'erro', msg: 'Arquivo muito grande. Limite de 25MB.' });
+      return;
+    }
+
+    setNotificacao({ tipo: '', msg: '' });
+    setAnexo(arquivo);
   }
 
   async function handleSubmit(e) {
@@ -60,7 +84,7 @@ export default function Atendimento() {
     setNotificacao({ tipo: '', msg: '' });
 
     try {
-      const response = await fetch('http://localhost:3001/api/atendimentos', {
+      const response = await fetch(`${API_URL}/api/atendimentos`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -74,18 +98,66 @@ export default function Atendimento() {
 
       const data = await response.json();
 
-      if (response.ok) {
-        setNotificacao({ tipo: 'sucesso', msg: 'Solicitação enviada com sucesso! Um profissional atenderá você em breve.' });
-        setMensagemInicial('');
-        carregarChamados(usuario.id);
-      } else {
+      if (!response.ok) {
         setNotificacao({ tipo: 'erro', msg: data.error || 'Erro ao enviar solicitação.' });
+        return;
       }
+
+      // Chamado criado — se a pessoa escolheu um anexo, sobe ele agora,
+      // já vinculado a esse chamado recém-criado.
+      if (anexo) {
+        const formData = new FormData();
+        formData.append('arquivo', anexo);
+        const uploadRes = await fetch(`${API_URL}/api/atendimentos/${data.id}/anexo`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+          body: formData
+        });
+        if (!uploadRes.ok) {
+          const uploadData = await uploadRes.json().catch(() => ({}));
+          setNotificacao({ tipo: 'erro', msg: `Solicitação enviada, mas o anexo não pôde ser enviado: ${uploadData.error || 'erro desconhecido'}` });
+          setMensagemInicial('');
+          setAnexo(null);
+          carregarChamados(usuario.id);
+          return;
+        }
+      }
+
+      setNotificacao({ tipo: 'sucesso', msg: 'Solicitação enviada com sucesso! Um profissional atenderá você em breve.' });
+      setMensagemInicial('');
+      setAnexo(null);
+      carregarChamados(usuario.id);
     } catch (err) {
       console.error('Erro ao conectar ao servidor:', err);
       setNotificacao({ tipo: 'erro', msg: 'Não foi possível se conectar ao servidor.' });
     } finally {
       setEnviando(false);
+    }
+  }
+
+  async function handleCancelarSolicitacao(e, id) {
+    e.stopPropagation(); // não deixa o clique também abrir a conversa
+    if (!window.confirm('Cancelar esta solicitação? Ela deixa de aparecer na fila dos profissionais.')) return;
+
+    try {
+      const response = await fetch(`${API_URL}/api/atendimentos/${id}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ status: 'encerrada' })
+      });
+
+      if (response.ok) {
+        setChamados((prev) => prev.map((c) => (c.id === id ? { ...c, status: 'encerrada' } : c)));
+      } else {
+        const data = await response.json();
+        alert(data.error || 'Não foi possível cancelar a solicitação.');
+      }
+    } catch (err) {
+      console.error('Erro ao cancelar solicitação:', err);
+      alert('Não foi possível se conectar ao servidor.');
     }
   }
 
@@ -211,6 +283,45 @@ export default function Atendimento() {
                   />
                 </div>
 
+                <div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*,video/*"
+                    onChange={handleSelecionarAnexo}
+                    className="hidden"
+                  />
+                  {anexo ? (
+                    <div className="flex items-center justify-between gap-2 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                      <span className="flex items-center gap-2 text-slate-600 font-medium truncate">
+                        {anexo.type.startsWith('image/') ? (
+                          <ImageIcon className="w-4 h-4 shrink-0 text-[#34a094]" />
+                        ) : (
+                          <Video className="w-4 h-4 shrink-0 text-[#34a094]" />
+                        )}
+                        <span className="truncate">{anexo.name}</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setAnexo(null)}
+                        aria-label="Remover anexo"
+                        className="p-1 text-slate-400 hover:text-red-600 transition-colors shrink-0"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex items-center gap-2 text-xs font-semibold text-slate-500 hover:text-[#34a094] transition-colors"
+                    >
+                      <Paperclip className="w-4 h-4" />
+                      Anexar foto ou vídeo (opcional)
+                    </button>
+                  )}
+                </div>
+
                 <button
                   type="submit"
                   disabled={enviando}
@@ -331,8 +442,18 @@ export default function Atendimento() {
                       )}
 
                       {item.status !== 'encerrada' && (
-                        <div className="flex items-center justify-end text-[11px] font-bold text-[#34a094] opacity-80 group-hover:opacity-100 pt-1">
-                          Abrir conversa <ChevronRight className="w-3.5 h-3.5 ml-0.5" />
+                        <div className="flex items-center justify-between pt-1">
+                          {item.status === 'aguardando_voluntario' ? (
+                            <button
+                              onClick={(e) => handleCancelarSolicitacao(e, item.id)}
+                              className="flex items-center gap-1 text-[11px] font-bold text-red-500 hover:text-red-600 opacity-80 hover:opacity-100"
+                            >
+                              <XCircle className="w-3.5 h-3.5" /> Cancelar
+                            </button>
+                          ) : <span />}
+                          <div className="flex items-center text-[11px] font-bold text-[#34a094] opacity-80 group-hover:opacity-100">
+                            Abrir conversa <ChevronRight className="w-3.5 h-3.5 ml-0.5" />
+                          </div>
                         </div>
                       )}
                     </div>

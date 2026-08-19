@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { Shield, Mail, UserCheck, ArrowLeft, Stethoscope, User, ShieldAlert, Calendar, UserCog } from 'lucide-react';
+import { API_URL } from '../config';
 
 export default function Admin() {
   const [usuarios, setUsuarios] = useState([]);
@@ -22,7 +23,7 @@ export default function Admin() {
 
     async function carregarUsuarios() {
       try {
-        const response = await fetch('http://localhost:3001/api/admin/usuarios', {
+        const response = await fetch(`${API_URL}/api/admin/usuarios`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`
           }
@@ -49,7 +50,7 @@ export default function Admin() {
     if (!window.confirm(`Tornar "${nome}" um administrador? Essa pessoa passará a ter acesso total ao painel administrativo.`)) return;
 
     try {
-      const response = await fetch(`http://localhost:3001/api/admin/usuarios/${id}/tornar-admin`, {
+      const response = await fetch(`${API_URL}/api/admin/usuarios/${id}/tornar-admin`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });

@@ -36,3 +36,34 @@ export function gerarToken(usuario) {
     { expiresIn: '7d' }
   );
 }
+
+// Token de redefinição de senha: de propósito, curto (30min) e sem precisar
+// de tabela nova no banco. Inclui um pedaço do hash da senha ATUAL — se a
+// senha já foi trocada (por esse link ou por qualquer outro meio), o pedaço
+// não bate mais e o link vira automaticamente inválido (uso único de fato).
+export function gerarTokenReset(usuario) {
+  return jwt.sign(
+    { id: usuario.id, proposito: 'reset-senha', fp: usuario.senha_hash.slice(0, 12) },
+    process.env.JWT_SECRET,
+    { expiresIn: '30m' }
+  );
+}
+
+export function verificarTokenReset(token) {
+  return jwt.verify(token, process.env.JWT_SECRET);
+}
+
+// Token de confirmação de e-mail: mais longo (24h, dá tempo da pessoa
+// achar o e-mail) e sem fingerprint — confirmar duas vezes não tem
+// problema nenhum, então não precisa de uso único de fato.
+export function gerarTokenVerificacao(usuario) {
+  return jwt.sign(
+    { id: usuario.id, proposito: 'verificar-email' },
+    process.env.JWT_SECRET,
+    { expiresIn: '24h' }
+  );
+}
+
+export function verificarTokenVerificacao(token) {
+  return jwt.verify(token, process.env.JWT_SECRET);
+}

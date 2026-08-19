@@ -64,32 +64,32 @@ export default function Home() {
           <p className="mt-1 text-base text-slate-500">Toque em um botão para ver a resposta passo a passo.</p>
 
           <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <Link to="/duvidas" className="group flex flex-col items-center justify-center p-6 bg-white border border-slate-200 rounded-2xl text-center shadow-sm transition-all hover:border-[#0d9488] hover:-translate-y-0.5 hover:shadow-md">
+            <Link to={`/duvidas?q=${encodeURIComponent('Como carregar o aparelho auditivo')}`} className="group flex flex-col items-center justify-center p-6 bg-white border border-slate-200 rounded-2xl text-center shadow-sm transition-all hover:border-[#0d9488] hover:-translate-y-0.5 hover:shadow-md">
               <BatteryCharging className="w-8 h-8 text-[#0d9488] mb-3 group-hover:scale-105 transition-transform" />
               <span className="font-bold text-slate-900 text-base">Como carregar</span>
             </Link>
 
-            <Link to="/duvidas" className="group flex flex-col items-center justify-center p-6 bg-white border border-slate-200 rounded-2xl text-center shadow-sm transition-all hover:border-[#0d9488] hover:-translate-y-0.5 hover:shadow-md">
+            <Link to={`/duvidas?q=${encodeURIComponent('Meu aparelho não liga, o que faço?')}`} className="group flex flex-col items-center justify-center p-6 bg-white border border-slate-200 rounded-2xl text-center shadow-sm transition-all hover:border-[#0d9488] hover:-translate-y-0.5 hover:shadow-md">
               <AlertCircle className="w-8 h-8 text-[#0d9488] mb-3 group-hover:scale-105 transition-transform" />
               <span className="font-bold text-slate-900 text-base">Não liga</span>
             </Link>
 
-            <Link to="/duvidas" className="group flex flex-col items-center justify-center p-6 bg-white border border-slate-200 rounded-2xl text-center shadow-sm transition-all hover:border-[#0d9488] hover:-translate-y-0.5 hover:shadow-md">
+            <Link to={`/duvidas?q=${encodeURIComponent('Como limpar o molde do aparelho')}`} className="group flex flex-col items-center justify-center p-6 bg-white border border-slate-200 rounded-2xl text-center shadow-sm transition-all hover:border-[#0d9488] hover:-translate-y-0.5 hover:shadow-md">
               <Sparkles className="w-8 h-8 text-[#0d9488] mb-3 group-hover:scale-105 transition-transform" />
               <span className="font-bold text-slate-900 text-base">Como limpar</span>
             </Link>
 
-            <Link to="/duvidas" className="group flex flex-col items-center justify-center p-6 bg-white border border-slate-200 rounded-2xl text-center shadow-sm transition-all hover:border-[#0d9488] hover:-translate-y-0.5 hover:shadow-md">
+            <Link to={`/duvidas?q=${encodeURIComponent('Como conectar o aparelho ao celular')}`} className="group flex flex-col items-center justify-center p-6 bg-white border border-slate-200 rounded-2xl text-center shadow-sm transition-all hover:border-[#0d9488] hover:-translate-y-0.5 hover:shadow-md">
               <Smartphone className="w-8 h-8 text-[#0d9488] mb-3 group-hover:scale-105 transition-transform" />
               <span className="font-bold text-slate-900 text-base">Ligar no celular</span>
             </Link>
 
-            <Link to="/duvidas" className="group flex flex-col items-center justify-center p-6 bg-white border border-slate-200 rounded-2xl text-center shadow-sm transition-all hover:border-[#0d9488] hover:-translate-y-0.5 hover:shadow-md">
+            <Link to={`/duvidas?q=${encodeURIComponent('Meu aparelho está apitando, o que fazer?')}`} className="group flex flex-col items-center justify-center p-6 bg-white border border-slate-200 rounded-2xl text-center shadow-sm transition-all hover:border-[#0d9488] hover:-translate-y-0.5 hover:shadow-md">
               <Volume2 className="w-8 h-8 text-[#0d9488] mb-3 group-hover:scale-105 transition-transform" />
               <span className="font-bold text-slate-900 text-base">Está apitando</span>
             </Link>
 
-            <Link to="/duvidas" className="group flex flex-col items-center justify-center p-6 bg-white border border-slate-200 rounded-2xl text-center shadow-sm transition-all hover:border-[#0d9488] hover:-translate-y-0.5 hover:shadow-md">
+            <Link to={`/duvidas?q=${encodeURIComponent('Como colocar o aparelho na orelha')}`} className="group flex flex-col items-center justify-center p-6 bg-white border border-slate-200 rounded-2xl text-center shadow-sm transition-all hover:border-[#0d9488] hover:-translate-y-0.5 hover:shadow-md">
               <Ear className="w-8 h-8 text-[#0d9488] mb-3 group-hover:scale-105 transition-transform" />
               <span className="font-bold text-slate-900 text-base">Como colocar</span>
             </Link>
@@ -139,7 +139,7 @@ export default function Home() {
                 <p className="text-sm text-slate-500 leading-relaxed">
                   Se ainda precisar, envie sua pergunta para um profissional do nosso time.
                 </p>
-                <Link to="/chat" className="mt-4 text-sm font-semibold text-[#0d9488] hover:underline inline-flex items-center gap-1">
+                <Link to="/atendimento" className="mt-4 text-sm font-semibold text-[#0d9488] hover:underline inline-flex items-center gap-1">
                   Enviar mensagem &rarr;
                 </Link>
               </div>

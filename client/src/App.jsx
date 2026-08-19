@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Home from './pages/Home';
 import Faq from './pages/Faq';
 import ChatIa from './pages/ChatIa';
@@ -11,6 +11,13 @@ import Admin from './pages/Admin';
 import Perfil from './pages/Perfil';
 import FonoDashboard from './pages/FonoDashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import Impacto from './pages/Impacto';
+import Sobre from './pages/Sobre';
+import Privacidade from './pages/Privacidade';
+import EsqueciSenha from './pages/EsqueciSenha';
+import RedefinirSenha from './pages/RedefinirSenha';
+import VerificarEmail from './pages/VerificarEmail';
+import NotFound from './pages/NotFound';
 
 export default function App() {
   return (
@@ -26,10 +33,16 @@ export default function App() {
         <Route path="/perfil" element={<Perfil />} /> 
         <Route path="/chat/:id" element={<ChatFono />} />
         <Route path="/painelfono" element={<FonoDashboard />} /> 
-        <Route path="/paineladmin" element={<AdminDashboard />} /> 
+        <Route path="/paineladmin" element={<AdminDashboard />} />
+        <Route path="/impacto" element={<Impacto />} />
+        <Route path="/sobre" element={<Sobre />} />
+        <Route path="/privacidade" element={<Privacidade />} />
+        <Route path="/esqueci-senha" element={<EsqueciSenha />} />
+        <Route path="/redefinir-senha" element={<RedefinirSenha />} />
+        <Route path="/verificar-email" element={<VerificarEmail />} />
 
         
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
   );

@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { UserCheck, Clock, MessageSquare, CheckCircle2, User, Award, ArrowRight, LogOut, Inbox, Search } from 'lucide-react';
+import { UserCheck, Clock, MessageSquare, CheckCircle2, User, Award, ArrowRight, LogOut, Inbox, Search, ToggleLeft, ToggleRight } from 'lucide-react';
+import { API_URL } from '../config';
 
 export default function FonoDashboard() {
   const navigate = useNavigate();
@@ -12,6 +13,9 @@ export default function FonoDashboard() {
 
   const [atendimentos, setAtendimentos] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const [disponivel, setDisponivel] = useState(true);
+  const [salvandoDisponibilidade, setSalvandoDisponibilidade] = useState(false);
 
   // 🔒 Proteção de Rota
   useEffect(() => {
@@ -24,11 +28,48 @@ export default function FonoDashboard() {
 
     setUsuario(usuarioSalvo);
     carregarFila();
+    carregarDisponibilidade();
   }, [navigate]);
+
+  async function carregarDisponibilidade() {
+    try {
+      const res = await fetch(`${API_URL}/api/perfil`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setDisponivel(data.disponivel ?? true);
+      }
+    } catch (err) {
+      console.error('Erro ao buscar disponibilidade:', err);
+    }
+  }
+
+  async function handleToggleDisponivel() {
+    const novoValor = !disponivel;
+    setDisponivel(novoValor); // otimista
+    setSalvandoDisponibilidade(true);
+    try {
+      const res = await fetch(`${API_URL}/api/perfil/disponibilidade`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ disponivel: novoValor })
+      });
+      if (!res.ok) setDisponivel(!novoValor); // desfaz se falhar
+    } catch (err) {
+      console.error('Erro ao atualizar disponibilidade:', err);
+      setDisponivel(!novoValor);
+    } finally {
+      setSalvandoDisponibilidade(false);
+    }
+  }
 
   async function carregarFila() {
     try {
-      const response = await fetch('http://localhost:3001/api/atendimentos/fila', {
+      const response = await fetch(`${API_URL}/api/atendimentos/fila`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       if (response.ok) {
@@ -50,7 +91,7 @@ export default function FonoDashboard() {
   // Assumir atendimento e navegar para o chat
   const handleAssumirAtendimento = async (id) => {
     try {
-      const response = await fetch(`http://localhost:3001/api/atendimentos/${id}/assumir`, {
+      const response = await fetch(`${API_URL}/api/atendimentos/${id}/assumir`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -121,12 +162,28 @@ export default function FonoDashboard() {
             </div>
           </div>
 
-          <button 
-            onClick={handleLogout} 
-            className="flex items-center gap-1.5 px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 font-semibold text-sm rounded-xl transition-colors border border-red-200/60"
-          >
-            <LogOut className="w-4 h-4" /> Sair
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleToggleDisponivel}
+              disabled={salvandoDisponibilidade}
+              className={`flex items-center gap-1.5 px-4 py-2 font-semibold text-sm rounded-xl transition-colors border disabled:opacity-60 ${
+                disponivel
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                  : 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200'
+              }`}
+              title="Pacientes veem se você está disponível pra atender agora"
+            >
+              {disponivel ? <ToggleRight className="w-4 h-4" /> : <ToggleLeft className="w-4 h-4" />}
+              {disponivel ? 'Disponível' : 'Ausente'}
+            </button>
+
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-1.5 px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 font-semibold text-sm rounded-xl transition-colors border border-red-200/60"
+            >
+              <LogOut className="w-4 h-4" /> Sair
+            </button>
+          </div>
         </div>
 
         {/* CARDS INDICADORES / FILTROS PRINCIPAIS */}

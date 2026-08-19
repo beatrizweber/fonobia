@@ -1,92 +1,22 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams, Link } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { BookOpen, Search, ChevronRight, X, HelpCircle } from 'lucide-react';
+import { BookOpen, Search, ChevronRight, X, HelpCircle, MessageSquare } from 'lucide-react';
+import { API_URL } from '../config';
 
-// Dados das FAQs expandidos com respostas completas
-const faqData = [
-  {
-    category: "Uso no dia a dia",
-    items: [
-      { 
-        title: "Como colocar o aparelho na orelha", 
-        description: "O encaixe correto faz toda a diferença na escuta.",
-        answer: "Certifique-se de identificar o lado correto (geralmente vermelho para o ouvido direito e azul para o esquerdo). Posicione o corpo do aparelho atrás da orelha e, suavemente, insira a oliva/molde no canal auditivo até sentir que está firme e confortável."
-      },
-      { 
-        title: "Posso usar o aparelho na chuva ou no banho?", 
-        description: "Cuidados com água, suor e umidade.",
-        answer: "Não. A maioria dos aparelhos auditivos não é à prova d'água. Retire-os sempre antes do banho, ao nadar ou em chuvas fortes. Se molhar sem querer, desligue imediatamente, remova a pilha (se houver) e coloque no desumidificador."
-      }
-    ]
-  },
-  {
-    category: "Carga e pilha",
-    items: [
-      { 
-        title: "Como carregar o aparelho auditivo", 
-        description: "Passo a passo simples para deixar seu aparelho com bateria cheia.",
-        answer: "Coloque os aparelhos no carregador fornecido, garantindo que os contatos de recarga estejam limpos e bem encaixados. A luz do carregador geralmente piscará enquanto carrega e ficará fixa quando a carga estiver completa."
-      },
-      { 
-        title: "Meu aparelho não liga, o que faço?", 
-        description: "Veja o que verificar antes de procurar a assistência.",
-        answer: "1. Verifique se a pilha/bateria tem carga.\n2. Veja se a gaveta de pilha está totalmente fechada.\n3. Confira se a saída de som não está entupida por cera de ouvido.\n4. Certifique-se de que o aparelho está ligado."
-      },
-      { 
-        title: "Como trocar a pilha do aparelho", 
-        description: "Para aparelhos que usam pilha (não recarregáveis).",
-        answer: "Abra a gaveta da pilha, remova a pilha gasta e retire o adesivo de proteção da pilha nova. Espere 1 minuto para a pilha 'respirar' antes de inseri-la com o lado positivo (+) voltado para cima. Feche a gaveta."
-      }
-    ]
-  },
-  {
-    category: "Limpeza e cuidados",
-    items: [
-      { 
-        title: "Como limpar o molde do aparelho", 
-        description: "A limpeza diária aumenta a vida útil do aparelho.",
-        answer: "Use um pano seco e macio ou uma flanela para limpar o aparelho todos os dias. Para o molde de silicone, você pode usar a escovinha apropriada para remover o excesso de cera. Nunca use álcool ou produtos químicos."
-      },
-      { 
-        title: "Como guardar o aparelho à noite", 
-        description: "Guardar do jeito certo evita umidade e dano.",
-        answer: "Abra a gavetinha da pilha para desligar e economizar energia. Guarde o aparelho dentro do estojo protetor junto com o sílica gel (desumidificador) em um local seco e fora do alcance de crianças e animais domésticos."
-      }
-    ]
-  },
-  {
-    category: "Problemas comuns",
-    items: [
-      { 
-        title: "Meu aparelho está apitando, o que fazer?", 
-        description: "O apito (microfonia) tem causas simples de resolver.",
-        answer: "O apito acontece quando o som sai do aparelho e entra de volta no microfone. Verifique se o molde/oliva está bem encaixado na orelha. Se continuar apitando mesmo bem posicionado, procure seu fonoaudiólogo para verificar se há cera no ouvido ou necessidade de ajuste."
-      },
-      { 
-        title: "Quando devo voltar ao SUS para revisão?", 
-        description: "Revisões periódicas mantêm seu aparelho funcionando bem.",
-        answer: "O acompanhamento recomendado é de pelo menos 1 vez a cada 6 meses, ou sempre que notar alteração na sua audição, desconforto no som ou avaria no aparelho."
-      }
-    ]
-  },
-  {
-    category: "Conectar ao celular",
-    items: [
-      { 
-        title: "Como conectar o aparelho ao celular", 
-        description: "Alguns aparelhos modernos se conectam ao celular por Bluetooth.",
-        answer: "Ative o Bluetooth do celular, abra as configurações de 'Acessibilidade' ou o aplicativo próprio do fabricante do seu aparelho auditivo e coloque o aparelho em modo de pareamento (desligando e ligando novamente)."
-      }
-    ]
-  }
-];
-
-// Componente para um item da FAQ
-const FaqItem = ({ title, description, onClick }) => (
-  <div 
+// Componente para um item da FAQ — "destacado" marca visualmente sem
+// esconder os demais; "piscando" dá um flash rápido só quando a pessoa
+// acabou de chegar aqui clicando em algo (Home, IA, etc.)
+const FaqItem = ({ title, description, onClick, destacado, piscando }) => (
+  <div
+    id={destacado ? 'faq-item-destacado' : undefined}
     onClick={onClick}
-    className="rounded-xl border border-slate-200 bg-white text-slate-900 shadow-sm flex h-full items-start justify-between gap-4 p-5 transition-all hover:-translate-y-0.5 hover:border-[#34a094] hover:shadow-md cursor-pointer"
+    className={`rounded-xl border bg-white text-slate-900 shadow-sm flex h-full items-start justify-between gap-4 p-5 transition-all hover:-translate-y-0.5 hover:shadow-md cursor-pointer ${
+      destacado
+        ? 'border-[#0d9488] ring-2 ring-[#0d9488] bg-[#0d9488]/5'
+        : 'border-slate-200 hover:border-[#34a094]'
+    } ${piscando ? 'animate-destaque-flash' : ''}`}
   >
     <div>
       <h3 className="text-lg font-bold text-slate-800">{title}</h3>
@@ -97,25 +27,70 @@ const FaqItem = ({ title, description, onClick }) => (
 );
 
 export default function Faq() {
+  const [searchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFaq, setSelectedFaq] = useState(null);
+  const [faqData, setFaqData] = useState([]);
+  const [carregandoFaq, setCarregandoFaq] = useState(true);
+
+  // Conteúdo gerenciado pelo admin — vem do banco, não é mais fixo no código
+  useEffect(() => {
+    fetch(`${API_URL}/api/faq`)
+      .then((res) => res.json())
+      .then((data) => setFaqData(data))
+      .catch((err) => console.error('Erro ao carregar perguntas frequentes:', err))
+      .finally(() => setCarregandoFaq(false));
+  }, []);
+
+  // Acessibilidade: fecha o modal de resposta com a tecla Esc
+  useEffect(() => {
+    if (!selectedFaq) return;
+    const handleEsc = (e) => { if (e.key === 'Escape') setSelectedFaq(null); };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [selectedFaq]);
 
   const normalizeText = (text) => text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
+  const [itemPiscando, setItemPiscando] = useState(null);
+
+  // Chegou aqui vindo de um bot\u00e3o de "d\u00favida r\u00e1pida" (Home, IA, etc.) \u2014
+  // destaca a pergunta relacionada e abre a resposta, SEM esconder as
+  // outras d\u00favidas da lista.
+  useEffect(() => {
+    const pergunta = searchParams.get('q');
+    if (!pergunta || faqData.length === 0) return;
+
+    setSearchTerm(pergunta);
+
+    const todosItens = faqData.flatMap((grupo) => grupo.items);
+    const itemExato = todosItens.find((item) => normalizeText(item.title) === normalizeText(pergunta));
+    if (itemExato) {
+      setSelectedFaq(itemExato);
+      setItemPiscando(itemExato.title);
+      const t1 = setTimeout(() => setItemPiscando(null), 1800);
+      const t2 = setTimeout(() => {
+        document.getElementById('faq-item-destacado')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+      return () => { clearTimeout(t1); clearTimeout(t2); };
+    }
+  }, [searchParams, faqData]);
+
   const normalizedSearch = normalizeText(searchTerm);
 
-  const filteredFaqData = faqData.map(group => ({
-    ...group,
-    items: group.items.filter(item => 
-      normalizeText(item.title).includes(normalizedSearch) || 
-      normalizeText(item.description).includes(normalizedSearch)
-    )
-  })).filter(group => group.items.length > 0);
-
-  const hasResults = filteredFaqData.length > 0;
+  const itemDestacado = (item) =>
+    normalizedSearch !== '' &&
+    (normalizeText(item.title).includes(normalizedSearch) || normalizeText(item.description).includes(normalizedSearch));
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900 antialiased font-sans">
+      <style>{`
+        @keyframes destaque-flash {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(13,148,136,0.55); }
+          50% { box-shadow: 0 0 0 10px rgba(13,148,136,0); }
+        }
+        .animate-destaque-flash { animation: destaque-flash 0.9s ease-in-out 2; }
+      `}</style>
       <Header />
 
       <main className="flex-1">
@@ -139,28 +114,42 @@ export default function Faq() {
             />
           </div>
 
-          {/* FAQ LIST */}
+          {/* FAQ LIST — nunca esconde itens; só destaca os que combinam com a busca */}
+          {carregandoFaq ? (
+            <div className="mt-10 text-center text-slate-400 text-sm py-12">Carregando perguntas...</div>
+          ) : (
           <div className="mt-10 space-y-10">
-            {hasResults ? (
-              filteredFaqData.map(group => (
-                <section key={group.category}>
-                  <h2 className="mb-4 text-2xl font-bold text-slate-800 border-b border-slate-200 pb-2">{group.category}</h2>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    {group.items.map(item => (
-                      <FaqItem 
-                        key={item.title} 
-                        {...item} 
-                        onClick={() => setSelectedFaq(item)}
-                      />
-                    ))}
-                  </div>
-                </section>
-              ))
-            ) : searchTerm !== '' && (
-              <div className="text-center py-12 text-slate-500 text-lg">
-                Nenhuma dúvida encontrada para o termo digitado.
-              </div>
-            )}
+            {faqData.map(group => (
+              <section key={group.category}>
+                <h2 className="mb-4 text-2xl font-bold text-slate-800 border-b border-slate-200 pb-2">{group.category}</h2>
+                <div className="grid gap-4 md:grid-cols-2">
+                  {group.items.map(item => (
+                    <FaqItem
+                      key={item.title}
+                      {...item}
+                      destacado={itemDestacado(item)}
+                      piscando={itemPiscando === item.title}
+                      onClick={() => setSelectedFaq(item)}
+                    />
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
+          )}
+
+          {/* CTA PRA IA */}
+          <div className="mt-14 bg-[#f0fdfa] border border-[#0d9488]/20 rounded-2xl p-8 text-center">
+            <MessageSquare className="w-9 h-9 text-[#0d9488] mx-auto mb-3" />
+            <h2 className="text-xl font-bold text-slate-900">Não encontrou o que precisa?</h2>
+            <p className="mt-1.5 text-slate-600">Utilize nossa IA — a Zélia responde sua dúvida na hora.</p>
+            <Link
+              to="/chat"
+              className="mt-5 inline-flex items-center justify-center gap-2 font-semibold transition-all bg-[#0d9488] text-white shadow-md hover:bg-teal-700 h-12 rounded-xl px-6 text-base"
+            >
+              <MessageSquare className="h-5 w-5" />
+              Conversar com a Zélia
+            </Link>
           </div>
         </div>
       </main>
@@ -168,9 +157,10 @@ export default function Faq() {
       {/* MODAL DE RESPOSTA */}
       {selectedFaq && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl relative animate-in fade-in zoom-in duration-200">
-            <button 
+          <div role="dialog" aria-modal="true" aria-labelledby="faq-modal-title" className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl relative animate-in fade-in zoom-in duration-200">
+            <button
               onClick={() => setSelectedFaq(null)}
+              aria-label="Fechar"
               className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors"
             >
               <X className="w-6 h-6" />
@@ -178,7 +168,7 @@ export default function Faq() {
 
             <div className="flex items-center gap-3 text-[#34a094] mb-3">
               <HelpCircle className="w-7 h-7 shrink-0" />
-              <h3 className="text-xl font-bold text-slate-900 pr-6">{selectedFaq.title}</h3>
+              <h3 id="faq-modal-title" className="text-xl font-bold text-slate-900 pr-6">{selectedFaq.title}</h3>
             </div>
 
             <div className="border-t border-slate-100 pt-4 mt-2">

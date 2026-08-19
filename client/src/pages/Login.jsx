@@ -2,22 +2,28 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { LogIn } from 'lucide-react';
+import { LogIn, MailCheck } from 'lucide-react';
+import { API_URL } from '../config';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [erro, setErro] = useState('');
   const [carregando, setCarregando] = useState(false);
+  const [emailNaoVerificado, setEmailNaoVerificado] = useState(false);
+  const [reenviando, setReenviando] = useState(false);
+  const [reenvioFeito, setReenvioFeito] = useState(false);
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setErro('');
+    setEmailNaoVerificado(false);
+    setReenvioFeito(false);
     setCarregando(true);
 
     try {
-      const response = await fetch('http://localhost:3001/api/auth/login', {
+      const response = await fetch(`${API_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }, // 🟢 Corrigido o Content-Type
         body: JSON.stringify({ email, senha })
@@ -26,6 +32,7 @@ export default function Login() {
       const data = await response.json();
 
       if (!response.ok) {
+        if (data.emailNaoVerificado) setEmailNaoVerificado(true);
         throw new Error(data.error || 'Falha ao realizar login.');
       }
 
@@ -49,6 +56,22 @@ export default function Login() {
     }
   };
 
+  const handleReenviarVerificacao = async () => {
+    setReenviando(true);
+    try {
+      await fetch(`${API_URL}/api/auth/reenviar-verificacao`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      setReenvioFeito(true);
+    } catch (err) {
+      setReenvioFeito(true);
+    } finally {
+      setReenviando(false);
+    }
+  };
+
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground antialiased font-sans">
       <Header />
@@ -68,8 +91,23 @@ export default function Login() {
 
           {/* MENSAGEM DE ERRO (CASO EXISTA) */}
           {erro && (
-            <div className="p-3 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm font-medium text-center">
-              {erro}
+            <div className="p-3 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm font-medium text-center space-y-2">
+              <p>{erro}</p>
+              {emailNaoVerificado && (
+                reenvioFeito ? (
+                  <p className="text-emerald-700 font-semibold">Se esse e-mail estiver cadastrado, reenviamos o link de confirmação.</p>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleReenviarVerificacao}
+                    disabled={reenviando}
+                    className="inline-flex items-center gap-1.5 font-bold text-[#34a094] hover:underline disabled:opacity-50"
+                  >
+                    <MailCheck className="w-4 h-4" />
+                    {reenviando ? 'Reenviando...' : 'Reenviar e-mail de confirmação'}
+                  </button>
+                )
+              )}
             </div>
           )}
 
@@ -89,9 +127,14 @@ export default function Login() {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1">
-                Senha
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-sm font-semibold text-slate-700">
+                  Senha
+                </label>
+                <Link to="/esqueci-senha" className="text-xs font-semibold text-[#34a094] hover:underline">
+                  Esqueci minha senha
+                </Link>
+              </div>
               <input
                 type="password"
                 value={senha}

@@ -189,3 +189,198 @@ ALTER TABLE voluntario
 UPDATE voluntario SET status_aprovacao = 'aprovado' WHERE aprovado = TRUE;
 
 ALTER TABLE voluntario DROP COLUMN aprovado;
+
+--PARTE 4 - Executar Separado =================================
+
+-- ============================================================
+-- Aumenta o limite de registro_profissional: 20 caracteres era
+-- suficiente pra CRFa, mas curto demais pra "comprovante de
+-- matrícula" de estagiário — cadastro falhava com erro genérico.
+-- ============================================================
+ALTER TABLE voluntario
+    ALTER COLUMN registro_profissional TYPE VARCHAR(50);
+
+-- ============================================================
+-- Controle de liberação da avaliação. Por padrão, uma avaliação
+-- fica visível SÓ para o admin — nunca é apagada, só liberada ou
+-- ocultada pro fono e pro paciente quando o admin decidir.
+-- ============================================================
+ALTER TABLE avaliacao
+    ADD COLUMN liberado BOOLEAN NOT NULL DEFAULT FALSE;
+
+--PARTE 5 - Executar Separado =================================
+
+-- ============================================================
+-- Suporte a anexar foto/vídeo no chat humano. Renomeia audio_url
+-- pra arquivo_url (nome genérico, guarda qualquer tipo de anexo)
+-- e adiciona 'imagem'/'video' no enum de tipo de conteúdo.
+-- ============================================================
+ALTER TYPE tipo_conteudo_enum ADD VALUE 'imagem';
+ALTER TYPE tipo_conteudo_enum ADD VALUE 'video';
+
+ALTER TABLE mensagem RENAME COLUMN audio_url TO arquivo_url;
+
+--PARTE 6 - Executar Separado =================================
+
+-- ============================================================
+-- Confirmação de e-mail no cadastro. DEFAULT TRUE pra não travar
+-- as contas que já existiam antes dessa migração (inclusive admin,
+-- que nunca passa pela rota pública de cadastro) — só as contas
+-- criadas a partir de agora nascem como FALSE (a rota de registro
+-- passa esse valor explicitamente) e precisam clicar no link
+-- enviado por e-mail antes de conseguir logar.
+-- ============================================================
+ALTER TABLE usuario
+    ADD COLUMN email_verificado BOOLEAN NOT NULL DEFAULT TRUE;
+
+--PARTE 7 - Executar Separado =================================
+
+-- ============================================================
+-- Motivo da rejeição de cadastro de voluntário — visível pra
+-- pessoa entender o porquê, não só "foi recusado". Fica NULL
+-- enquanto pendente/aprovado, só é preenchido junto do rejeitar.
+-- ============================================================
+ALTER TABLE voluntario
+    ADD COLUMN motivo_rejeicao TEXT;
+
+--PARTE 8 - Executar Separado =================================
+
+-- ============================================================
+-- FAQ gerenciável pelo admin. Antes era um array fixo dentro do
+-- componente React — qualquer alteração exigia mexer no código e
+-- fazer novo deploy. Agora vive no banco.
+-- ============================================================
+CREATE TABLE faq_categoria (
+    id      SERIAL PRIMARY KEY,
+    nome    VARCHAR(100)    NOT NULL,
+    ordem   INT             NOT NULL DEFAULT 0
+);
+
+CREATE TABLE faq_item (
+    id              SERIAL PRIMARY KEY,
+    categoria_id    INT             NOT NULL REFERENCES faq_categoria(id) ON DELETE CASCADE,
+    titulo          VARCHAR(200)    NOT NULL,
+    descricao       VARCHAR(300),
+    resposta        TEXT            NOT NULL,
+    ordem           INT             NOT NULL DEFAULT 0,
+    criado_em       TIMESTAMPTZ     NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_faq_item_categoria_id ON faq_item (categoria_id);
+
+-- Migra o conteúdo que já existia fixo no front (client/src/pages/Faq.jsx)
+-- pra ninguém perder as perguntas que já estavam lá.
+INSERT INTO faq_categoria (nome, ordem) VALUES
+    ('Uso no dia a dia', 1),
+    ('Carga e pilha', 2),
+    ('Limpeza e cuidados', 3),
+    ('Problemas comuns', 4),
+    ('Conectar ao celular', 5);
+
+INSERT INTO faq_item (categoria_id, titulo, descricao, resposta, ordem) VALUES
+    ((SELECT id FROM faq_categoria WHERE nome = 'Uso no dia a dia'),
+     'Como colocar o aparelho na orelha',
+     'O encaixe correto faz toda a diferença na escuta.',
+     'Certifique-se de identificar o lado correto (geralmente vermelho para o ouvido direito e azul para o esquerdo). Posicione o corpo do aparelho atrás da orelha e, suavemente, insira a oliva/molde no canal auditivo até sentir que está firme e confortável.',
+     1),
+    ((SELECT id FROM faq_categoria WHERE nome = 'Uso no dia a dia'),
+     'Posso usar o aparelho na chuva ou no banho?',
+     'Cuidados com água, suor e umidade.',
+     'Não. A maioria dos aparelhos auditivos não é à prova d''água. Retire-os sempre antes do banho, ao nadar ou em chuvas fortes. Se molhar sem querer, desligue imediatamente, remova a pilha (se houver) e coloque no desumidificador.',
+     2),
+
+    ((SELECT id FROM faq_categoria WHERE nome = 'Carga e pilha'),
+     'Como carregar o aparelho auditivo',
+     'Passo a passo simples para deixar seu aparelho com bateria cheia.',
+     'Coloque os aparelhos no carregador fornecido, garantindo que os contatos de recarga estejam limpos e bem encaixados. A luz do carregador geralmente piscará enquanto carrega e ficará fixa quando a carga estiver completa.',
+     1),
+    ((SELECT id FROM faq_categoria WHERE nome = 'Carga e pilha'),
+     'Meu aparelho não liga, o que faço?',
+     'Veja o que verificar antes de procurar a assistência.',
+     '1. Verifique se a pilha/bateria tem carga.
+2. Veja se a gaveta de pilha está totalmente fechada.
+3. Confira se a saída de som não está entupida por cera de ouvido.
+4. Certifique-se de que o aparelho está ligado.',
+     2),
+    ((SELECT id FROM faq_categoria WHERE nome = 'Carga e pilha'),
+     'Como trocar a pilha do aparelho',
+     'Para aparelhos que usam pilha (não recarregáveis).',
+     'Abra a gaveta da pilha, remova a pilha gasta e retire o adesivo de proteção da pilha nova. Espere 1 minuto para a pilha ''respirar'' antes de inseri-la com o lado positivo (+) voltado para cima. Feche a gaveta.',
+     3),
+
+    ((SELECT id FROM faq_categoria WHERE nome = 'Limpeza e cuidados'),
+     'Como limpar o molde do aparelho',
+     'A limpeza diária aumenta a vida útil do aparelho.',
+     'Use um pano seco e macio ou uma flanela para limpar o aparelho todos os dias. Para o molde de silicone, você pode usar a escovinha apropriada para remover o excesso de cera. Nunca use álcool ou produtos químicos.',
+     1),
+    ((SELECT id FROM faq_categoria WHERE nome = 'Limpeza e cuidados'),
+     'Como guardar o aparelho à noite',
+     'Guardar do jeito certo evita umidade e dano.',
+     'Abra a gavetinha da pilha para desligar e economizar energia. Guarde o aparelho dentro do estojo protetor junto com o sílica gel (desumidificador) em um local seco e fora do alcance de crianças e animais domésticos.',
+     2),
+
+    ((SELECT id FROM faq_categoria WHERE nome = 'Problemas comuns'),
+     'Meu aparelho está apitando, o que fazer?',
+     'O apito (microfonia) tem causas simples de resolver.',
+     'O apito acontece quando o som sai do aparelho e entra de volta no microfone. Verifique se o molde/oliva está bem encaixado na orelha. Se continuar apitando mesmo bem posicionado, procure seu fonoaudiólogo para verificar se há cera no ouvido ou necessidade de ajuste.',
+     1),
+    ((SELECT id FROM faq_categoria WHERE nome = 'Problemas comuns'),
+     'Quando devo voltar ao SUS para revisão?',
+     'Revisões periódicas mantêm seu aparelho funcionando bem.',
+     'O acompanhamento recomendado é de pelo menos 1 vez a cada 6 meses, ou sempre que notar alteração na sua audição, desconforto no som ou avaria no aparelho.',
+     2),
+
+    ((SELECT id FROM faq_categoria WHERE nome = 'Conectar ao celular'),
+     'Como conectar o aparelho ao celular',
+     'Alguns aparelhos modernos se conectam ao celular por Bluetooth.',
+     'Ative o Bluetooth do celular, abra as configurações de ''Acessibilidade'' ou o aplicativo próprio do fabricante do seu aparelho auditivo e coloque o aparelho em modo de pareamento (desligando e ligando novamente).',
+     1);
+
+--PARTE 9 - Executar Separado =================================
+
+-- ============================================================
+-- Confirmação de leitura ("visto") nas mensagens do chat humano.
+-- ============================================================
+ALTER TABLE mensagem
+    ADD COLUMN lido_em TIMESTAMPTZ;
+
+--PARTE 10 - Executar Separado =================================
+
+-- ============================================================
+-- Disponibilidade do voluntário ("online"/"ausente"), pra quem
+-- pede atendimento saber se tem alguém pra atender agora. Só é
+-- relevante quando aprovado — mas o campo existe pra todo mundo,
+-- sem condicional na tabela.
+-- ============================================================
+ALTER TABLE voluntario
+    ADD COLUMN disponivel BOOLEAN NOT NULL DEFAULT TRUE;
+
+--PARTE 11 - Executar Separado =================================
+
+-- ============================================================
+-- Bio curta + especialidade do voluntário — aparece pro paciente
+-- durante o atendimento, pra saber com quem está falando.
+-- ============================================================
+ALTER TABLE voluntario
+    ADD COLUMN bio TEXT,
+    ADD COLUMN especialidade VARCHAR(100);
+
+--PARTE 12 - Executar Separado =================================
+
+-- ============================================================
+-- Log de auditoria das ações administrativas. Guarda só as ações
+-- de maior impacto (aprovar/rejeitar voluntário, promover admin,
+-- liberar/ocultar avaliação, mexer no FAQ) — não é log de sistema,
+-- é rastro de responsabilidade de quem fez o quê.
+-- ============================================================
+CREATE TABLE log_admin (
+    id          BIGSERIAL       PRIMARY KEY,
+    admin_id    UUID            NOT NULL REFERENCES usuario(id) ON DELETE RESTRICT,
+    acao        VARCHAR(60)     NOT NULL,
+    alvo_tipo   VARCHAR(30)     NOT NULL,
+    alvo_id     VARCHAR(100),
+    detalhes    TEXT,
+    criado_em   TIMESTAMPTZ     NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_log_admin_criado_em ON log_admin (criado_em DESC);

@@ -6,6 +6,7 @@ import {
   MessageSquare, Mic, Send, HelpCircle, X, UserCheck, Loader2,
   BatteryCharging, AlertCircle, Sparkles, Smartphone, Volume2, Ear
 } from 'lucide-react';
+import { API_URL } from '../config';
 
 // Mesmos temas e mesmas perguntas usados na Home e em /duvidas —
 // clicar já manda a pergunta pronta pra IA.
@@ -20,7 +21,7 @@ const PERGUNTAS_RAPIDAS = [
 
 const MENSAGEM_INICIAL = {
   sender: 'ia',
-  text: 'Olá! Sou a assistente do **AjudaÁudio**. Conte sua dúvida sobre seu aparelho auditivo do SUS que vou te ajudar. Você pode escrever ou tocar no microfone.'
+  text: 'Olá, sou a **Zélia**, a assistente virtual do **AjudaÁudio**. Conte sua dúvida sobre seu aparelho auditivo do SUS que vou te ajudar. Você pode escrever ou tocar no microfone.'
 };
 
 // 🟢 Função para converter **texto** em negrito nativo sem bibliotecas extras
@@ -50,6 +51,14 @@ export default function ChatIa() {
   const [isListening, setIsListening] = useState(false);
   const [showFonoModal, setShowFonoModal] = useState(false);
 
+  // Acessibilidade: fecha o modal com a tecla Esc
+  useEffect(() => {
+    if (!showFonoModal) return;
+    const handleEsc = (e) => { if (e.key === 'Escape') setShowFonoModal(false); };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [showFonoModal]);
+
   // Se estiver logado como paciente, carrega o histórico salvo da conversa com a IA
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -58,7 +67,7 @@ export default function ChatIa() {
 
     (async () => {
       try {
-        const response = await fetch('http://localhost:3001/api/chat/historico', {
+        const response = await fetch(`${API_URL}/api/chat/historico`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (!response.ok) return;
@@ -90,7 +99,7 @@ export default function ChatIa() {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3001/api/chat', {
+      const response = await fetch(`${API_URL}/api/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -275,9 +284,10 @@ export default function ChatIa() {
       {/* MODAL FONOAUDIÓLOGO */}
       {showFonoModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl relative">
-            <button 
+          <div role="dialog" aria-modal="true" aria-labelledby="fono-modal-title" className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl relative">
+            <button
               onClick={() => setShowFonoModal(false)}
+              aria-label="Fechar"
               className="absolute top-4 right-4 text-slate-400 hover:text-slate-600"
             >
               <X className="w-6 h-6" />
@@ -285,7 +295,7 @@ export default function ChatIa() {
 
             <div className="flex items-center gap-3 text-[#34a094] mb-4">
               <UserCheck className="w-8 h-8" />
-              <h2 className="text-xl font-bold text-slate-900">Atendimento Humano</h2>
+              <h2 id="fono-modal-title" className="text-xl font-bold text-slate-900">Atendimento Humano</h2>
             </div>
 
             <p className="text-slate-600 text-base leading-relaxed mb-6">

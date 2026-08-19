@@ -2,7 +2,27 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { Send, ArrowLeft, Headphones, MessageSquare, CheckCircle2, Star, ThumbsUp, ThumbsDown, Meh} from 'lucide-react';
+import { Send, ArrowLeft, Headphones, MessageSquare, CheckCircle2, Star, ThumbsUp, ThumbsDown, Meh, Paperclip, Loader2, Video } from 'lucide-react';
+import { API_URL, WS_URL } from '../config';
+
+const BASE_URL = API_URL;
+
+// Detecta URLs dentro de uma mensagem de texto e transforma em link clicável
+// — sem isso, um link do Google Meet colado no chat ficaria só como texto puro.
+const REGEX_URL_SPLIT = /(https?:\/\/[^\s]+)/g;
+const REGEX_URL_TESTE = /^https?:\/\//;
+
+function renderizarTextoComLinks(texto, classeLink) {
+  return texto.split(REGEX_URL_SPLIT).map((parte, i) =>
+    REGEX_URL_TESTE.test(parte) ? (
+      <a key={i} href={parte} target="_blank" rel="noopener noreferrer" className={`underline break-all ${classeLink}`}>
+        {parte}
+      </a>
+    ) : (
+      <span key={i}>{parte}</span>
+    )
+  );
+}
 
 export default function ChatFono() {
   const { id: atendimentoId } = useParams();
@@ -16,6 +36,16 @@ export default function ChatFono() {
   const [loading, setLoading] = useState(true);
   const [enviando, setEnviando] = useState(false);
   const [encerrando, setEncerrando] = useState(false);
+  const [enviandoAnexo, setEnviandoAnexo] = useState(false);
+  const [erroAnexo, setErroAnexo] = useState('');
+  const fileInputRef = useRef(null);
+
+  // Tempo real: WebSocket pra mensagem instantânea + "digitando..."; o
+  // polling continua existindo como rede de segurança se a conexão cair.
+  const wsRef = useRef(null);
+  const [outraPessoaDigitando, setOutraPessoaDigitando] = useState(false);
+  const digitandoTimeoutRef = useRef(null);
+  const ultimoEnvioDigitandoRef = useRef(0);
 
   // Estados para o Formulário de Avaliação Rápida
   const [avaliacaoFono, setAvaliacaoFono] = useState(0);
@@ -24,6 +54,11 @@ export default function ChatFono() {
   const [avaliacaoEnviada, setAvaliacaoEnviada] = useState(false);
   const [enviandoAvaliacao, setEnviandoAvaliacao] = useState(false);
   const [erroAvaliacao, setErroAvaliacao] = useState('');
+
+  // Avaliação já existente (visão de quem NÃO é o paciente, ou pra saber se
+  // o próprio paciente já enviou antes de recarregar a página)
+  const [avaliacaoExistente, setAvaliacaoExistente] = useState(null);
+  const [carregandoAvaliacao, setCarregandoAvaliacao] = useState(false);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -47,13 +82,71 @@ export default function ChatFono() {
     return () => clearInterval(interval);
   }, [atendimentoId, navigate]);
 
+  // Conexão em tempo real — abre assim que sabemos quem é o usuário logado
+  useEffect(() => {
+    if (!usuario || !atendimentoId) return;
+    const token = localStorage.getItem('token');
+    const ws = new WebSocket(`${WS_URL}/ws/atendimentos/${atendimentoId}?token=${token}`);
+    wsRef.current = ws;
+
+    ws.onmessage = (event) => {
+      let dados;
+      try { dados = JSON.parse(event.data); } catch { return; }
+
+      if (dados.tipo === 'mensagem') {
+        carregarMensagens();
+      } else if (dados.tipo === 'digitando') {
+        setOutraPessoaDigitando(true);
+        clearTimeout(digitandoTimeoutRef.current);
+        digitandoTimeoutRef.current = setTimeout(() => setOutraPessoaDigitando(false), 2500);
+      } else if (dados.tipo === 'lido') {
+        setMensagens((prev) => prev.map((m) =>
+          dados.mensagensIds.includes(m.id) ? { ...m, lido_em: new Date().toISOString() } : m
+        ));
+      }
+    };
+
+    return () => {
+      ws.close();
+      clearTimeout(digitandoTimeoutRef.current);
+    };
+  }, [usuario, atendimentoId]);
+
   useEffect(() => {
     scrollToBottom();
   }, [mensagens]);
 
+  // Assim que souber que o atendimento está encerrado, busca a avaliação
+  // (se existir e estiver visível pra esse usuário)
+  useEffect(() => {
+    if (atendimento?.status === 'encerrada' && usuario) {
+      carregarAvaliacao();
+    }
+  }, [atendimento?.status, usuario]);
+
+  async function carregarAvaliacao() {
+    setCarregandoAvaliacao(true);
+    try {
+      const response = await fetch(`${API_URL}/api/atendimentos/${atendimentoId}/avaliacao`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setAvaliacaoExistente(data);
+        if (data && usuario?.tipo === 'paciente') {
+          setAvaliacaoEnviada(true);
+        }
+      }
+    } catch (err) {
+      console.error('Erro ao buscar avaliação:', err);
+    } finally {
+      setCarregandoAvaliacao(false);
+    }
+  }
+
   async function carregarDadosAtendimento() {
     try {
-      const resAtendimento = await fetch(`http://localhost:3001/api/atendimentos/${atendimentoId}`, {
+      const resAtendimento = await fetch(`${API_URL}/api/atendimentos/${atendimentoId}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       if (resAtendimento.ok) {
@@ -70,15 +163,72 @@ export default function ChatFono() {
 
   async function carregarMensagens() {
     try {
-      const resMsg = await fetch(`http://localhost:3001/api/atendimentos/${atendimentoId}/mensagens`, {
+      const resMsg = await fetch(`${API_URL}/api/atendimentos/${atendimentoId}/mensagens`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       if (resMsg.ok) {
         const dataMsg = await resMsg.json();
         setMensagens(dataMsg);
+        marcarComoLidas();
       }
     } catch (err) {
       console.error('Erro ao atualizar mensagens:', err);
+    }
+  }
+
+  // Marca como lida qualquer mensagem da OUTRA pessoa que ainda não tinha
+  // sido vista — chamado toda vez que a lista de mensagens é atualizada,
+  // já que estar vendo o chat é a própria confirmação de leitura.
+  async function marcarComoLidas() {
+    try {
+      await fetch(`${BASE_URL}/api/atendimentos/${atendimentoId}/mensagens/marcar-lidas`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+    } catch (err) {
+      console.error('Erro ao marcar mensagens como lidas:', err);
+    }
+  }
+
+  // Abre uma sala nova e gratuita no Google Meet (meet.google.com/new sempre
+  // gera uma sala instantânea pra quem está logado numa conta Google — não
+  // precisa de nenhuma integração/API paga). Não dá pra capturar o link
+  // gerado automaticamente por causa da política de mesma origem do
+  // navegador, então só deixamos o campo de mensagem pronto pra colar e
+  // mandar pro paciente assim que a sala abrir na outra aba.
+  function handleIniciarGoogleMeet() {
+    window.open('https://meet.google.com/new', '_blank', 'noopener,noreferrer');
+    setNovaMensagem((atual) => atual || 'Vamos conversar por vídeo? Entre na nossa sala: ');
+  }
+
+  // O paciente não cria a sala — só avisa o profissional, mandando uma
+  // mensagem normal no chat (o profissional já vê na hora, via WebSocket).
+  async function handlePedirVideochamada() {
+    if (atendimento?.status === 'encerrada') return;
+    try {
+      const response = await fetch(`${API_URL}/api/atendimentos/${atendimentoId}/mensagens`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ conteudo: '📹 Gostaria de fazer uma videochamada. Pode iniciar uma quando for possível?' })
+      });
+      if (response.ok) {
+        await carregarMensagens();
+      }
+    } catch (err) {
+      console.error('Erro ao pedir videochamada:', err);
+    }
+  }
+
+  function handleDigitarMensagem(valor) {
+    setNovaMensagem(valor);
+    const agora = Date.now();
+    if (agora - ultimoEnvioDigitandoRef.current < 1500) return;
+    ultimoEnvioDigitandoRef.current = agora;
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ tipo: 'digitando' }));
     }
   }
 
@@ -89,7 +239,7 @@ export default function ChatFono() {
     setEnviando(true);
 
     try {
-      const response = await fetch(`http://localhost:3001/api/atendimentos/${atendimentoId}/mensagens`, {
+      const response = await fetch(`${API_URL}/api/atendimentos/${atendimentoId}/mensagens`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -109,13 +259,55 @@ export default function ChatFono() {
     }
   }
 
+  async function handleAnexoSelecionado(e) {
+    const arquivo = e.target.files?.[0];
+    e.target.value = ''; // permite escolher o mesmo arquivo de novo depois
+    if (!arquivo || atendimento?.status === 'encerrada') return;
+
+    const ehImagemOuVideo = arquivo.type.startsWith('image/') || arquivo.type.startsWith('video/');
+    if (!ehImagemOuVideo) {
+      setErroAnexo('Só é possível anexar foto ou vídeo.');
+      return;
+    }
+    if (arquivo.size > 25 * 1024 * 1024) {
+      setErroAnexo('Arquivo muito grande. Limite de 25MB.');
+      return;
+    }
+
+    setErroAnexo('');
+    setEnviandoAnexo(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('arquivo', arquivo);
+
+      const response = await fetch(`${BASE_URL}/api/atendimentos/${atendimentoId}/anexo`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        body: formData
+      });
+
+      if (response.ok) {
+        await carregarMensagens();
+      } else {
+        const data = await response.json();
+        setErroAnexo(data.error || 'Erro ao enviar anexo.');
+      }
+    } catch (err) {
+      console.error('Erro ao enviar anexo:', err);
+      setErroAnexo('Não foi possível se conectar ao servidor.');
+    } finally {
+      setEnviandoAnexo(false);
+    }
+  }
+
   // 🔒 Encerra o atendimento no banco
   async function handleEncerrarAtendimento() {
     if (!window.confirm('Deseja realmente encerrar este atendimento?')) return;
 
     setEncerrando(true);
     try {
-      const response = await fetch(`http://localhost:3001/api/atendimentos/${atendimentoId}/status`, {
+      const response = await fetch(`${API_URL}/api/atendimentos/${atendimentoId}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -140,7 +332,7 @@ export default function ChatFono() {
     setErroAvaliacao('');
 
     try {
-      const response = await fetch(`http://localhost:3001/api/atendimentos/${atendimentoId}/avaliacao`, {
+      const response = await fetch(`${API_URL}/api/atendimentos/${atendimentoId}/avaliacao`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -203,10 +395,12 @@ export default function ChatFono() {
                 Atendimento #{atendimentoId}
               </h1>
               <p className="text-xs text-slate-500">
-                {isEncerrado 
-                  ? 'Atendimento finalizado' 
-                  : atendimento?.status === 'aguardando_voluntario' 
-                  ? 'Aguardando um profissional...' 
+                {isEncerrado
+                  ? 'Atendimento finalizado'
+                  : atendimento?.status === 'aguardando_voluntario'
+                  ? 'Aguardando um profissional...'
+                  : usuario?.tipo === 'paciente' && atendimento?.voluntario_nome
+                  ? `Atendido(a) por ${atendimento.voluntario_nome}${atendimento.voluntario_especialidade ? ` · ${atendimento.voluntario_especialidade}` : ''}`
                   : 'Em comunicação com fonoaudiologia'}
               </p>
             </div>
@@ -243,8 +437,9 @@ export default function ChatFono() {
               Nenhuma mensagem trocada ainda.
             </div>
           ) : (
-            mensagens.map((msg) => {
+            mensagens.map((msg, indice) => {
               const isMinhaMensagem = msg.remetente_id === usuario.id;
+              const ehUltimaMensagem = indice === mensagens.length - 1;
 
               return (
                 <div
@@ -260,26 +455,90 @@ export default function ChatFono() {
                     </span>
                   </div>
 
-                  <div
-                    className={`max-w-[80%] p-3.5 rounded-2xl text-sm leading-relaxed ${
-                      isMinhaMensagem
-                        ? 'bg-[#34a094] text-white rounded-tr-none shadow-sm'
-                        : 'bg-white text-slate-800 border border-slate-200 rounded-tl-none shadow-sm'
-                    }`}
-                  >
-                    {msg.conteudo}
-                  </div>
+                  {msg.tipo_conteudo === 'imagem' ? (
+                    <a href={`${BASE_URL}${msg.arquivo_url}`} target="_blank" rel="noopener noreferrer">
+                      <img
+                        src={`${BASE_URL}${msg.arquivo_url}`}
+                        alt="Anexo enviado no atendimento"
+                        className="max-w-[240px] max-h-[240px] rounded-2xl border border-slate-200 shadow-sm object-cover"
+                      />
+                    </a>
+                  ) : msg.tipo_conteudo === 'video' ? (
+                    <video
+                      src={`${BASE_URL}${msg.arquivo_url}`}
+                      controls
+                      className="max-w-[280px] max-h-[280px] rounded-2xl border border-slate-200 shadow-sm"
+                    />
+                  ) : (
+                    <div
+                      className={`max-w-[80%] p-3.5 rounded-2xl text-sm leading-relaxed ${
+                        isMinhaMensagem
+                          ? 'bg-[#34a094] text-white rounded-tr-none shadow-sm'
+                          : 'bg-white text-slate-800 border border-slate-200 rounded-tl-none shadow-sm'
+                      }`}
+                    >
+                      {renderizarTextoComLinks(msg.conteudo, isMinhaMensagem ? 'text-white' : 'text-[#0d9488]')}
+                    </div>
+                  )}
+
+                  {isMinhaMensagem && ehUltimaMensagem && (
+                    <span className="text-[9px] text-slate-400 mt-0.5 px-1">
+                      {msg.lido_em ? 'Visto' : 'Enviado'}
+                    </span>
+                  )}
                 </div>
               );
             })
           )}
+
+          {outraPessoaDigitando && (
+            <div className="flex items-center gap-1.5 px-1 text-xs text-slate-400 italic">
+              <span className="flex gap-0.5">
+                <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" />
+              </span>
+              digitando...
+            </div>
+          )}
+
           <div ref={messagesEndRef} />
         </div>
 
         {/* ÁREA INFERIOR: ENVIAR MENSAGEM OU AVALIAÇÃO RÁPIDA */}
         <div className="bg-white rounded-b-2xl border border-slate-200 p-4 shadow-sm">
           {isEncerrado ? (
-            avaliacaoEnviada ? (
+            usuario?.tipo !== 'paciente' ? (
+              /* FONO/ESTAGIÁRIO/ADMIN: nunca veem o formulário de avaliação —
+                 só um resumo, e só se o admin já tiver liberado (ou se for admin) */
+              <div className="p-6 bg-slate-50 border border-slate-200 rounded-xl text-center space-y-2">
+                <CheckCircle2 className="w-8 h-8 mx-auto text-slate-400 mb-1" />
+                <h3 className="font-bold text-sm text-slate-700">Atendimento Finalizado</h3>
+
+                {carregandoAvaliacao ? (
+                  <p className="text-xs text-slate-400">Carregando avaliação...</p>
+                ) : avaliacaoExistente ? (
+                  <div className="max-w-sm mx-auto bg-white rounded-xl border border-slate-200 p-4 mt-2 space-y-2">
+                    <div className="flex items-center justify-center gap-1">
+                      {[1, 2, 3, 4, 5].map((n) => (
+                        <Star
+                          key={n}
+                          className={`w-5 h-5 ${n <= avaliacaoExistente.nota_fono ? 'fill-amber-400 text-amber-400' : 'text-slate-200'}`}
+                        />
+                      ))}
+                    </div>
+                    {avaliacaoExistente.comentario && (
+                      <p className="text-xs text-slate-600 italic">"{avaliacaoExistente.comentario}"</p>
+                    )}
+                    {!avaliacaoExistente.liberado && (
+                      <p className="text-[10px] text-slate-400 uppercase tracking-wide font-bold">Visível só pra admin</p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-400">A avaliação deste atendimento ainda não está disponível.</p>
+                )}
+              </div>
+            ) : avaliacaoEnviada ? (
               <div className="p-6 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-center space-y-1">
                 <CheckCircle2 className="w-8 h-8 mx-auto text-emerald-600 mb-2" />
                 <h3 className="font-bold text-sm">Obrigado pelo seu feedback!</h3>
@@ -395,22 +654,66 @@ export default function ChatFono() {
             )
           ) : (
             /* FORMULÁRIO DE ENVIO PADRÃO DO CHAT */
-            <form onSubmit={handleEnviar} className="flex items-center gap-2">
-              <input
-                type="text"
-                value={novaMensagem}
-                onChange={(e) => setNovaMensagem(e.target.value)}
-                placeholder="Digite sua mensagem..."
-                className="flex-1 px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-[#34a094]/40 focus:border-[#34a094]"
-              />
-              <button
-                type="submit"
-                disabled={!novaMensagem.trim() || enviando}
-                className="p-3 bg-[#34a094] hover:bg-[#2b8379] text-white font-bold rounded-xl shadow-md transition-colors disabled:opacity-50"
-              >
-                <Send className="w-5 h-5" />
-              </button>
-            </form>
+            <div>
+              {erroAnexo && (
+                <p className="text-xs text-red-600 font-medium mb-2 text-center">{erroAnexo}</p>
+              )}
+              <form onSubmit={handleEnviar} className="flex items-center gap-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*,video/*"
+                  onChange={handleAnexoSelecionado}
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={enviandoAnexo}
+                  aria-label="Anexar foto ou vídeo"
+                  title="Anexar foto ou vídeo"
+                  className="p-3 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition-colors disabled:opacity-50 shrink-0"
+                >
+                  {enviandoAnexo ? <Loader2 className="w-5 h-5 animate-spin" /> : <Paperclip className="w-5 h-5" />}
+                </button>
+
+                {usuario?.tipo === 'paciente' ? (
+                  <button
+                    type="button"
+                    onClick={handlePedirVideochamada}
+                    aria-label="Pedir videochamada"
+                    title="Pedir videochamada ao profissional"
+                    className="p-3 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition-colors shrink-0"
+                  >
+                    <Video className="w-5 h-5" />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleIniciarGoogleMeet}
+                    aria-label="Iniciar videochamada no Google Meet"
+                    title="Iniciar videochamada no Google Meet"
+                    className="p-3 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition-colors shrink-0"
+                  >
+                    <Video className="w-5 h-5" />
+                  </button>
+                )}
+                <input
+                  type="text"
+                  value={novaMensagem}
+                  onChange={(e) => handleDigitarMensagem(e.target.value)}
+                  placeholder="Digite sua mensagem..."
+                  className="flex-1 px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-[#34a094]/40 focus:border-[#34a094]"
+                />
+                <button
+                  type="submit"
+                  disabled={!novaMensagem.trim() || enviando}
+                  className="p-3 bg-[#34a094] hover:bg-[#2b8379] text-white font-bold rounded-xl shadow-md transition-colors disabled:opacity-50 shrink-0"
+                >
+                  <Send className="w-5 h-5" />
+                </button>
+              </form>
+            </div>
           )}
         </div>
 

@@ -2,16 +2,21 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { User, Mail, Shield, Calendar, Ear, CreditCard, LogOut, FileText, Pencil, X, Save, CheckCircle2, AlertCircle } from 'lucide-react';
+import { User, Mail, Shield, Calendar, Ear, CreditCard, LogOut, FileText, Pencil, X, Save, Clock, XCircle, Download, Trash2 } from 'lucide-react';
+import FeedbackBanner from '../components/FeedbackBanner';
+import { API_URL } from '../config';
 
 const CAMPOS_VAZIOS = {
   nome: '',
+  email: '',
   cartao_sus: '',
   data_nascimento: '',
   modelo_aparelho: '',
   lado_aparelho: 'bilateral',
   registro_profissional: '',
-  instituicao: ''
+  instituicao: '',
+  bio: '',
+  especialidade: ''
 };
 
 export default function Perfil() {
@@ -21,6 +26,8 @@ export default function Perfil() {
   const [salvando, setSalvando] = useState(false);
   const [formData, setFormData] = useState(CAMPOS_VAZIOS);
   const [feedback, setFeedback] = useState({ tipo: '', mensagem: '' });
+  const [exportando, setExportando] = useState(false);
+  const [excluindo, setExcluindo] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -36,7 +43,7 @@ export default function Perfil() {
 
   async function carregarPerfil() {
     try {
-      const response = await fetch('http://localhost:3001/api/perfil', {
+      const response = await fetch(`${API_URL}/api/perfil`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
 
@@ -59,15 +66,61 @@ export default function Perfil() {
     navigate('/login');
   };
 
+  const handleExportarDados = async () => {
+    setExportando(true);
+    try {
+      const response = await fetch(`${API_URL}/api/perfil/exportar`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+      if (!response.ok) throw new Error('Não foi possível gerar seus dados.');
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'meus-dados-ajudaaudio.json';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setFeedback({ tipo: 'erro', mensagem: err.message || 'Erro ao baixar seus dados.' });
+    } finally {
+      setExportando(false);
+    }
+  };
+
+  const handleExcluirConta = async () => {
+    if (!window.confirm('Tem certeza que quer excluir sua conta? Seu nome, e-mail e dados de cadastro serão removidos do sistema. Essa ação não pode ser desfeita.')) return;
+
+    setExcluindo(true);
+    try {
+      const response = await fetch(`${API_URL}/api/perfil`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+      if (!response.ok) throw new Error('Não foi possível excluir sua conta.');
+
+      localStorage.clear();
+      navigate('/');
+    } catch (err) {
+      setFeedback({ tipo: 'erro', mensagem: err.message || 'Erro ao excluir sua conta.' });
+      setExcluindo(false);
+    }
+  };
+
   const iniciarEdicao = () => {
     setFormData({
       nome: usuario.nome || '',
+      email: usuario.email || '',
       cartao_sus: usuario.cartao_sus || '',
       data_nascimento: usuario.data_nascimento ? usuario.data_nascimento.slice(0, 10) : '',
       modelo_aparelho: usuario.modelo_aparelho || '',
       lado_aparelho: usuario.lado_aparelho || 'bilateral',
       registro_profissional: usuario.registro_profissional || '',
-      instituicao: usuario.instituicao || ''
+      instituicao: usuario.instituicao || '',
+      bio: usuario.bio || '',
+      especialidade: usuario.especialidade || ''
     });
     setFeedback({ tipo: '', mensagem: '' });
     setEditando(true);
@@ -84,7 +137,7 @@ export default function Perfil() {
     setFeedback({ tipo: '', mensagem: '' });
 
     try {
-      const response = await fetch('http://localhost:3001/api/perfil', {
+      const response = await fetch(`${API_URL}/api/perfil`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -101,9 +154,9 @@ export default function Perfil() {
 
       setUsuario(data);
 
-      // Mantém o nome exibido no Header/localStorage em sincronia
+      // Mantém nome/e-mail exibidos no Header/localStorage em sincronia
       const usuarioLocal = JSON.parse(localStorage.getItem('usuario') || '{}');
-      localStorage.setItem('usuario', JSON.stringify({ ...usuarioLocal, nome: data.nome }));
+      localStorage.setItem('usuario', JSON.stringify({ ...usuarioLocal, nome: data.nome, email: data.email }));
 
       setEditando(false);
       setFeedback(
@@ -158,6 +211,29 @@ export default function Perfil() {
           </div>
 
           <div className="p-8 space-y-6">
+            {(tipoUsuario === 'fonoaudiologo' || tipoUsuario === 'estagiario') && usuario.status_aprovacao === 'rejeitado' && (
+              <div className="p-4 rounded-xl bg-red-50 border border-red-200 flex gap-3">
+                <XCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-bold text-sm text-red-800">Cadastro não aprovado</p>
+                  <p className="text-sm text-red-700 mt-0.5">
+                    {usuario.motivo_rejeicao || 'Nenhum motivo foi registrado. Fale com a administração para mais detalhes.'}
+                  </p>
+                  <p className="text-xs text-red-600/80 mt-1.5">Se quiser corrigir algo e pedir uma nova análise, entre em contato com a administração.</p>
+                </div>
+              </div>
+            )}
+
+            {(tipoUsuario === 'fonoaudiologo' || tipoUsuario === 'estagiario') && usuario.status_aprovacao === 'pendente' && (
+              <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 flex gap-3">
+                <Clock className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-bold text-sm text-amber-800">Cadastro em análise</p>
+                  <p className="text-sm text-amber-700 mt-0.5">Um administrador ainda vai validar seu registro profissional antes de você poder atender pacientes.</p>
+                </div>
+              </div>
+            )}
+
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                 <User className="w-5 h-5 text-[#34a094]" />
@@ -174,24 +250,7 @@ export default function Perfil() {
               )}
             </div>
 
-            {feedback.mensagem && (
-              <div
-                className={`p-3.5 rounded-xl text-sm font-medium flex items-center gap-2 ${
-                  feedback.tipo === 'sucesso'
-                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                    : feedback.tipo === 'aviso'
-                    ? 'bg-amber-50 text-amber-800 border border-amber-200'
-                    : 'bg-red-50 text-red-800 border border-red-200'
-                }`}
-              >
-                {feedback.tipo === 'sucesso' ? (
-                  <CheckCircle2 className="w-4 h-4 shrink-0" />
-                ) : (
-                  <AlertCircle className="w-4 h-4 shrink-0" />
-                )}
-                {feedback.mensagem}
-              </div>
-            )}
+            <FeedbackBanner tipo={feedback.tipo} mensagem={feedback.mensagem} />
 
             {editando ? (
               <form onSubmit={handleSalvar} className="space-y-5">
@@ -205,6 +264,19 @@ export default function Perfil() {
                     onChange={handleChange}
                     className="w-full p-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#34a094]/40 focus:border-[#34a094]"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase text-slate-500 mb-1.5">E-mail</label>
+                  <input
+                    type="email"
+                    name="email"
+                    required
+                    value={formData.email}
+                    onChange={handleChange}
+                    className="w-full p-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#34a094]/40 focus:border-[#34a094]"
+                  />
+                  <p className="text-xs text-slate-400 mt-1">É esse e-mail que você usa pra entrar na sua conta.</p>
                 </div>
 
                 {tipoUsuario === 'paciente' && (
@@ -270,6 +342,7 @@ export default function Perfil() {
                         <input
                           type="text"
                           name="registro_profissional"
+                          maxLength={50}
                           value={formData.registro_profissional}
                           onChange={handleChange}
                           className="w-full p-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#34a094]/40 focus:border-[#34a094]"
@@ -286,6 +359,32 @@ export default function Perfil() {
                           className="w-full p-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#34a094]/40 focus:border-[#34a094]"
                         />
                       </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold uppercase text-slate-500 mb-1.5">Especialidade (opcional)</label>
+                      <input
+                        type="text"
+                        name="especialidade"
+                        maxLength={100}
+                        value={formData.especialidade}
+                        onChange={handleChange}
+                        placeholder="Ex: Linguagem infantil, Voz, Motricidade orofacial..."
+                        className="w-full p-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#34a094]/40 focus:border-[#34a094]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold uppercase text-slate-500 mb-1.5">Bio curta (opcional)</label>
+                      <textarea
+                        name="bio"
+                        rows={3}
+                        maxLength={500}
+                        value={formData.bio}
+                        onChange={handleChange}
+                        placeholder="Uma breve apresentação pra quem você for atender."
+                        className="w-full p-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#34a094]/40 focus:border-[#34a094] resize-none"
+                      />
                     </div>
 
                     {usuario.status_aprovacao === 'aprovado' && (
@@ -396,20 +495,69 @@ export default function Perfil() {
                         </p>
                       </div>
                     )}
+
+                    {usuario.especialidade && (
+                      <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                          Especialidade
+                        </span>
+                        <p className="font-semibold text-slate-700">
+                          {usuario.especialidade}
+                        </p>
+                      </div>
+                    )}
+
+                    {usuario.bio && (
+                      <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 md:col-span-2">
+                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                          Bio
+                        </span>
+                        <p className="text-sm text-slate-700 whitespace-pre-line">
+                          {usuario.bio}
+                        </p>
+                      </div>
+                    )}
                   </>
                 )}
               </div>
             )}
 
             {!editando && (
-              <div className="pt-6 border-t border-slate-100 flex justify-end">
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 font-bold text-sm transition-colors"
-                >
-                  <LogOut className="w-4 h-4" />
-                  Sair da Conta
-                </button>
+              <div className="pt-6 border-t border-slate-100 space-y-5">
+                <div>
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Meus dados (LGPD)</h3>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={handleExportarDados}
+                      disabled={exportando}
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors disabled:opacity-50"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      {exportando ? 'Gerando arquivo...' : 'Baixar meus dados'}
+                    </button>
+                    <button
+                      onClick={handleExcluirConta}
+                      disabled={excluindo}
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 font-bold text-xs transition-colors disabled:opacity-50 border border-red-200"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      {excluindo ? 'Excluindo...' : 'Excluir minha conta'}
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-slate-400 mt-2">
+                    Excluir a conta remove seu nome, e-mail e dados de cadastro do sistema. Mensagens que já fazem parte de um atendimento continuam existindo (fazem parte do histórico de outra pessoa), mas deixam de te identificar.
+                  </p>
+                </div>
+
+                <div className="flex justify-end">
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 font-bold text-sm transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Sair da Conta
+                  </button>
+                </div>
               </div>
             )}
           </div>

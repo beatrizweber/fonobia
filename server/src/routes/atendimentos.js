@@ -1,8 +1,13 @@
 // server/src/routes/atendimentos.js
-import { pool } from '../server.js';
+import { pool, uploadsDir } from '../server.js';
 import { verificarToken, exigirTipos } from '../middleware/auth.js';
+import { randomUUID } from 'node:crypto';
+import { writeFile } from 'node:fs/promises';
+import path from 'node:path';
+import { broadcast } from '../ws/salas.js';
 
 const STATUS_VALIDOS = ['com_ia', 'aguardando_voluntario', 'com_voluntario', 'encerrada'];
+const TAMANHO_MAX_ANEXO = 25 * 1024 * 1024; // 25MB
 
 // usuario.tipo -> remetente_enum ('paciente' | 'ia' | 'voluntario')
 function mapTipoParaRemetente(tipo) {
@@ -14,13 +19,15 @@ function mapTipoParaRemetente(tipo) {
 
 // Só o paciente dono do chamado, o voluntário que assumiu, ou um admin
 // podem ver/mexer numa sessão — nunca um terceiro que só saiba o UUID.
-function ehParticipanteOuAdmin(usuario, sessao) {
+// Exportada porque a rota de WebSocket (chatWs.js) faz a mesma checagem
+// fora do hook de autenticação HTTP normal.
+export function ehParticipanteOuAdmin(usuario, sessao) {
   return usuario.tipo === 'admin'
     || usuario.id === sessao.paciente_id
     || usuario.id === sessao.voluntario_id;
 }
 
-async function buscarSessaoBasica(id) {
+export async function buscarSessaoBasica(id) {
   const result = await pool.query(
     'SELECT id, paciente_id, voluntario_id, status FROM sessao WHERE id = $1',
     [id]
@@ -43,7 +50,25 @@ const SELECT_LISTAGEM = `
       WHERE m.sessao_id = s.id
       ORDER BY m.enviado_em ASC
       LIMIT 1
-    ) AS mensagem_inicial
+    ) AS mensagem_inicial,
+    (
+      SELECT m.remetente FROM mensagem m
+      WHERE m.sessao_id = s.id
+      ORDER BY m.enviado_em DESC
+      LIMIT 1
+    ) AS ultima_mensagem_remetente,
+    (
+      SELECT m.enviado_em FROM mensagem m
+      WHERE m.sessao_id = s.id
+      ORDER BY m.enviado_em DESC
+      LIMIT 1
+    ) AS ultima_mensagem_em,
+    -- Notificação do fono só some quando ele de fato ABRE o chat (marca como
+    -- lida) — não quando só responde. Ver item "marcar-lidas".
+    EXISTS (
+      SELECT 1 FROM mensagem m
+      WHERE m.sessao_id = s.id AND m.remetente = 'paciente' AND m.lido_em IS NULL
+    ) AS tem_resposta_nao_lida
   FROM sessao s
   JOIN usuario up ON up.id = s.paciente_id
   LEFT JOIN usuario uv ON uv.id = s.voluntario_id
@@ -115,7 +140,25 @@ export async function atendimentosRoutes(server, options) {
              WHERE m.sessao_id = s.id
              ORDER BY m.enviado_em ASC
              LIMIT 1
-           ) AS primeira_mensagem
+           ) AS primeira_mensagem,
+           (
+             SELECT m.remetente FROM mensagem m
+             WHERE m.sessao_id = s.id
+             ORDER BY m.enviado_em DESC
+             LIMIT 1
+           ) AS ultima_mensagem_remetente,
+           (
+             SELECT m.enviado_em FROM mensagem m
+             WHERE m.sessao_id = s.id
+             ORDER BY m.enviado_em DESC
+             LIMIT 1
+           ) AS ultima_mensagem_em,
+           -- Notificação do paciente só some quando ele de fato ABRE o chat
+           -- (marca como lida) — não quando só responde.
+           EXISTS (
+             SELECT 1 FROM mensagem m
+             WHERE m.sessao_id = s.id AND m.remetente = 'voluntario' AND m.lido_em IS NULL
+           ) AS tem_mensagem_nao_lida
          FROM sessao s
          WHERE s.paciente_id = $1
          ORDER BY s.criado_em DESC`,
@@ -129,12 +172,17 @@ export async function atendimentosRoutes(server, options) {
   });
 
   // 3. FILA DO FONOAUDIÓLOGO (chamados que pediram atendimento humano)
+  // Fono/estagiário vê: a fila de espera compartilhada + os PRÓPRIOS
+  // atendimentos (em andamento ou já encerrados) — nunca o histórico
+  // encerrado de outro voluntário. Admin vê tudo.
   server.get('/api/atendimentos/fila', { preHandler: exigirTipos('fonoaudiologo', 'estagiario', 'admin') }, async (request, reply) => {
     try {
       const result = await pool.query(
         `${SELECT_LISTAGEM}
          WHERE s.iniciado_por = 'voluntario'
-         ORDER BY s.criado_em ASC`
+           AND ($1 = 'admin' OR s.status = 'aguardando_voluntario' OR s.voluntario_id = $2)
+         ORDER BY s.criado_em ASC`,
+        [request.usuario.tipo, request.usuario.id]
       );
       return reply.send(result.rows);
     } catch (error) {
@@ -166,10 +214,12 @@ export async function atendimentosRoutes(server, options) {
         `SELECT
            s.id, s.status, s.iniciado_por, s.paciente_id, s.voluntario_id, s.criado_em,
            up.nome AS paciente_nome,
-           uv.nome AS voluntario_nome
+           uv.nome AS voluntario_nome,
+           v.especialidade AS voluntario_especialidade
          FROM sessao s
          JOIN usuario up ON up.id = s.paciente_id
          LEFT JOIN usuario uv ON uv.id = s.voluntario_id
+         LEFT JOIN voluntario v ON v.usuario_id = s.voluntario_id
          WHERE s.id = $1`,
         [id]
       );
@@ -273,8 +323,9 @@ export async function atendimentosRoutes(server, options) {
            m.remetente,
            m.tipo_conteudo,
            m.conteudo,
-           m.audio_url,
+           m.arquivo_url,
            m.enviado_em AS criado_em,
+           m.lido_em,
            CASE m.remetente
              WHEN 'paciente' THEN s.paciente_id
              WHEN 'voluntario' THEN s.voluntario_id
@@ -326,14 +377,107 @@ export async function atendimentosRoutes(server, options) {
       const result = await pool.query(
         `INSERT INTO mensagem (sessao_id, remetente, conteudo)
          VALUES ($1, $2, $3)
-         RETURNING id, remetente, tipo_conteudo, conteudo, audio_url, enviado_em AS criado_em`,
+         RETURNING id, remetente, tipo_conteudo, conteudo, arquivo_url, enviado_em AS criado_em, lido_em`,
         [id, remetente, conteudo]
       );
 
+      broadcast(id, { tipo: 'mensagem', mensagem: result.rows[0] });
       return reply.status(201).send(result.rows[0]);
     } catch (error) {
       server.log.error(error);
       return reply.status(500).send({ error: 'Erro ao enviar mensagem.' });
+    }
+  });
+
+  // 9.2 MARCAR MENSAGENS COMO LIDAS — só as que a OUTRA pessoa mandou;
+  // chamado quando o participante abre/foca o chat.
+  server.patch('/api/atendimentos/:id/mensagens/marcar-lidas', async (request, reply) => {
+    const { id } = request.params;
+
+    try {
+      const sessao = await buscarSessaoBasica(id);
+      if (!sessao) {
+        return reply.status(404).send({ error: 'Atendimento não encontrado.' });
+      }
+      if (!ehParticipanteOuAdmin(request.usuario, sessao)) {
+        return reply.status(403).send({ error: 'Você não faz parte deste atendimento.' });
+      }
+
+      const remetenteProprio = mapTipoParaRemetente(request.usuario.tipo);
+
+      const result = await pool.query(
+        `UPDATE mensagem SET lido_em = now()
+         WHERE sessao_id = $1 AND remetente != $2 AND lido_em IS NULL
+         RETURNING id`,
+        [id, remetenteProprio]
+      );
+
+      if (result.rows.length > 0) {
+        broadcast(id, { tipo: 'lido', mensagensIds: result.rows.map((r) => r.id) });
+      }
+
+      return reply.send({ marcadas: result.rows.length });
+    } catch (error) {
+      server.log.error(error);
+      return reply.status(500).send({ error: 'Erro ao marcar mensagens como lidas.' });
+    }
+  });
+
+  // 9.1 ENVIAR ANEXO (foto ou vídeo) — mesmas regras da mensagem de texto
+  server.post('/api/atendimentos/:id/anexo', async (request, reply) => {
+    const { id } = request.params;
+
+    try {
+      const sessao = await buscarSessaoBasica(id);
+      if (!sessao) {
+        return reply.status(404).send({ error: 'Atendimento não encontrado.' });
+      }
+      if (!ehParticipanteOuAdmin(request.usuario, sessao)) {
+        return reply.status(403).send({ error: 'Você não faz parte deste atendimento.' });
+      }
+      if (sessao.status === 'encerrada') {
+        return reply.status(400).send({ error: 'Este atendimento já foi encerrado.' });
+      }
+
+      const arquivo = await request.file({ limits: { fileSize: TAMANHO_MAX_ANEXO } });
+      if (!arquivo) {
+        return reply.status(400).send({ error: 'Nenhum arquivo enviado.' });
+      }
+
+      const ehImagem = arquivo.mimetype.startsWith('image/');
+      const ehVideo = arquivo.mimetype.startsWith('video/');
+      if (!ehImagem && !ehVideo) {
+        return reply.status(400).send({ error: 'Só é possível anexar foto ou vídeo.' });
+      }
+
+      const buffer = await arquivo.toBuffer();
+      if (buffer.length > TAMANHO_MAX_ANEXO) {
+        return reply.status(400).send({ error: 'Arquivo muito grande. Limite de 25MB.' });
+      }
+
+      const extensao = path.extname(arquivo.filename) || (ehImagem ? '.jpg' : '.mp4');
+      const nomeArquivo = `${randomUUID()}${extensao}`;
+      await writeFile(path.join(uploadsDir, nomeArquivo), buffer);
+
+      const remetente = mapTipoParaRemetente(request.usuario.tipo);
+      const tipoConteudo = ehImagem ? 'imagem' : 'video';
+      const arquivoUrl = `/uploads/${nomeArquivo}`;
+
+      const result = await pool.query(
+        `INSERT INTO mensagem (sessao_id, remetente, tipo_conteudo, arquivo_url)
+         VALUES ($1, $2, $3, $4)
+         RETURNING id, remetente, tipo_conteudo, conteudo, arquivo_url, enviado_em AS criado_em, lido_em`,
+        [id, remetente, tipoConteudo, arquivoUrl]
+      );
+
+      broadcast(id, { tipo: 'mensagem', mensagem: result.rows[0] });
+      return reply.status(201).send(result.rows[0]);
+    } catch (error) {
+      if (error.code === 'FST_REQ_FILE_TOO_LARGE' || error.message?.includes('File too large')) {
+        return reply.status(400).send({ error: 'Arquivo muito grande. Limite de 25MB.' });
+      }
+      server.log.error(error);
+      return reply.status(500).send({ error: 'Erro ao enviar anexo.' });
     }
   });
 
@@ -375,6 +519,41 @@ export async function atendimentosRoutes(server, options) {
       }
       server.log.error(error);
       return reply.status(500).send({ error: 'Erro ao salvar avaliação.' });
+    }
+  });
+
+  // 11. VER A AVALIAÇÃO — admin sempre vê; paciente e voluntário só se o
+  // admin já tiver "liberado". Nunca é apagada, só fica invisível pra eles.
+  server.get('/api/atendimentos/:id/avaliacao', async (request, reply) => {
+    const { id } = request.params;
+
+    try {
+      const sessao = await buscarSessaoBasica(id);
+      if (!sessao) {
+        return reply.status(404).send({ error: 'Atendimento não encontrado.' });
+      }
+      if (!ehParticipanteOuAdmin(request.usuario, sessao)) {
+        return reply.status(403).send({ error: 'Você não faz parte deste atendimento.' });
+      }
+
+      const result = await pool.query(
+        'SELECT sessao_id, nota_fono, facilidade_site, comentario, liberado, criado_em FROM avaliacao WHERE sessao_id = $1',
+        [id]
+      );
+
+      if (result.rows.length === 0) {
+        return reply.send(null);
+      }
+
+      const avaliacao = result.rows[0];
+      if (request.usuario.tipo !== 'admin' && !avaliacao.liberado) {
+        return reply.send(null); // existe, mas o admin ainda não liberou pra ele ver
+      }
+
+      return reply.send(avaliacao);
+    } catch (error) {
+      server.log.error(error);
+      return reply.status(500).send({ error: 'Erro ao buscar avaliação.' });
     }
   });
 }

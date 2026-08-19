@@ -1,4 +1,6 @@
-const API_URL = 'http://localhost:3001/api';
+import { API_URL as BASE_URL } from '../config';
+
+const API_URL = `${BASE_URL}/api`;
 
 /**
  * Função utilitária para centralizar as requisições HTTP usando fetch
