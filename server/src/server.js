@@ -17,9 +17,15 @@
   import { faqRoutes } from './routes/faq.js';
   import { chatWsRoutes } from './routes/chatWs.js';
 
-  dotenv.config();
-
   const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+  // .env centralizado na raiz do projeto (dois níveis acima de server/src),
+  // não em server/.env — assim client e server lêem o mesmo arquivo. Em
+  // docker, isso não encontra nada (o .env não existe dentro da imagem) e
+  // dotenv simplesmente não faz nada, já que os valores chegam via
+  // env_file do docker-compose direto no process.env.
+  dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+
   export const uploadsDir = path.join(__dirname, '..', 'uploads');
 
   const { Pool } = pg;

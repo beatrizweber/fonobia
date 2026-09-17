@@ -1,0 +1,65 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    # DB_USER / DB_PASSWORD / DB_NAME vêm do .env centralizado na raiz do
+    # projeto (o mesmo arquivo que o serviço "server" usa logo abaixo).
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      # Roda o schema automaticamente SÓ na primeira vez que o volume é
+      # criado (banco vazio). Se o volume já existir, este arquivo é ignorado.
+      - ./server/src/database/banco.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  server:
+    build: ./server
+    restart: unless-stopped
+    # Injeta o .env inteiro (raiz do projeto) como variáveis de ambiente do
+    # container: PORT, DB_*, JWT_SECRET, SMTP_*, GROQ/GEMINI, FRONTEND_URL...
+    env_file:
+      - ./.env
+    environment:
+      # A ÚNICA coisa que precisa ser diferente de local pra dentro do
+      # docker: o Postgres não é "localhost" aqui, é o serviço "db" (nome
+      # do serviço acima, resolvido pela rede interna do compose). Todo o
+      # resto (usuário/senha/nome do banco, porta, SSL) já vem certo do
+      # env_file acima, porque é o mesmo banco/credenciais nos dois casos.
+      DB_HOST: db
+    volumes:
+      - server_uploads:/app/uploads
+    # Exposto só em 127.0.0.1: pensado pra um nginx do PRÓPRIO HOST (fora do
+    # docker) fazer o proxy reverso pra fora. Se preferir expor direto pra
+    # internet (sem nginx na frente), troque para apenas "3001:3001".
+    ports:
+      - "127.0.0.1:3001:3001"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  client:
+    build:
+      context: ./client
+      args:
+        # Vem do .env da raiz — o build do client não tem acesso a esse
+        # arquivo (fica fora da pasta client/), então passamos como
+        # build-arg em vez de copiar o .env pra dentro da imagem.
+        VITE_API_URL: ${VITE_API_URL}
+    restart: unless-stopped
+    # Mesma ideia do server: só em 127.0.0.1, pro nginx do host assumir a
+    # porta 80/443 pública e proxyar pra cá.
+    ports:
+      - "127.0.0.1:8080:80"
+    depends_on:
+      - server
+
+volumes:
+  db_data:
+  server_uploads:
