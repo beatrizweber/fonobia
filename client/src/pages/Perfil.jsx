@@ -12,7 +12,7 @@ const CAMPOS_VAZIOS = {
   cartao_sus: '',
   data_nascimento: '',
   modelo_aparelho: '',
-  lado_aparelho: 'bilateral',
+  lado_aparelho: '',
   registro_profissional: '',
   instituicao: '',
   bio: '',
@@ -46,6 +46,14 @@ export default function Perfil() {
       const response = await fetch(`${API_URL}/api/perfil`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
+
+      if (response.status === 401) {
+        // Token expirado/inválido — sessão local não serve mais pra nada,
+        // manda pro login em vez de deixar a página em branco.
+        localStorage.clear();
+        navigate('/login');
+        return;
+      }
 
       if (!response.ok) {
         throw new Error('Não foi possível carregar seu perfil.');
@@ -179,7 +187,17 @@ export default function Perfil() {
     );
   }
 
-  if (!usuario) return null;
+  if (!usuario) {
+    return (
+      <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900 font-sans">
+        <Header />
+        <main className="flex-1 container mx-auto max-w-3xl px-4 py-10">
+          <FeedbackBanner tipo={feedback.tipo} mensagem={feedback.mensagem || 'Não foi possível carregar seu perfil.'} />
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   const tipoUsuario = (usuario.tipo || 'paciente').toLowerCase();
 

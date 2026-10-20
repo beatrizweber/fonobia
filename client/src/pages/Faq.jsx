@@ -33,11 +33,14 @@ export default function Faq() {
   const [faqData, setFaqData] = useState([]);
   const [carregandoFaq, setCarregandoFaq] = useState(true);
 
-  // Conteúdo gerenciado pelo admin — vem do banco, não é mais fixo no código
+  // Conteúdo gerenciado pelo admin — vem do banco, não é mais fixo no código.
+  // Só aceita o resultado se vier 200 E for de fato um array — senão
+  // faqData.map() mais abaixo quebraria a página inteira (tela branca)
+  // ao tentar iterar um objeto de erro tipo { error: "..." }.
   useEffect(() => {
     fetch(`${API_URL}/api/faq`)
-      .then((res) => res.json())
-      .then((data) => setFaqData(data))
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`HTTP ${res.status}`))))
+      .then((data) => { if (Array.isArray(data)) setFaqData(data); })
       .catch((err) => console.error('Erro ao carregar perguntas frequentes:', err))
       .finally(() => setCarregandoFaq(false));
   }, []);
