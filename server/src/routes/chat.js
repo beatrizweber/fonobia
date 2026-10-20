@@ -91,7 +91,7 @@ export async function chatRoutes(server, options) {
           ...mensagensContexto,
           { role: 'user', content: message },
         ],
-        model: 'llama-3.3-70b-versatile',
+        model: 'llama-3.1-8b-instant',
         temperature: 0.5,
         max_tokens: 1024,
       });
