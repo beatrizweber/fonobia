@@ -27,7 +27,6 @@ function renderizarTextoComLinks(texto, classeLink) {
 export default function ChatFono() {
   const { id: atendimentoId } = useParams();
   const navigate = useNavigate();
-  const messagesEndRef = useRef(null);
 
   const [usuario, setUsuario] = useState(null);
   const [atendimento, setAtendimento] = useState(null);
@@ -59,10 +58,6 @@ export default function ChatFono() {
   // o próprio paciente já enviou antes de recarregar a página)
   const [avaliacaoExistente, setAvaliacaoExistente] = useState(null);
   const [carregandoAvaliacao, setCarregandoAvaliacao] = useState(false);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
 
   useEffect(() => {
     const usuarioSalvo = JSON.parse(localStorage.getItem('usuario') || '{}');
@@ -111,10 +106,6 @@ export default function ChatFono() {
       clearTimeout(digitandoTimeoutRef.current);
     };
   }, [usuario, atendimentoId]);
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [mensagens]);
 
   // Assim que souber que o atendimento está encerrado, busca a avaliação
   // (se existir e estiver visível pra esse usuário)
@@ -501,8 +492,6 @@ export default function ChatFono() {
               digitando...
             </div>
           )}
-
-          <div ref={messagesEndRef} />
         </div>
 
         {/* ÁREA INFERIOR: ENVIAR MENSAGEM OU AVALIAÇÃO RÁPIDA */}
