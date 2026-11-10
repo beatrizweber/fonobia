@@ -39,6 +39,13 @@ export default function ChatFono() {
   const [erroAnexo, setErroAnexo] = useState('');
   const fileInputRef = useRef(null);
 
+  // Scroll automático só DENTRO da caixa de mensagens (nunca a janela
+  // inteira), e só quando chega mensagem nova de verdade — sem isso, o
+  // polling a cada 3s re-renderiza "mensagens" mesmo sem nada novo e força
+  // o scroll toda hora, atrapalhando quem está lendo o histórico pra cima.
+  const mensagensContainerRef = useRef(null);
+  const quantidadeMensagensAnteriorRef = useRef(0);
+
   // Tempo real: WebSocket pra mensagem instantânea + "digitando..."; o
   // polling continua existindo como rede de segurança se a conexão cair.
   const wsRef = useRef(null);
@@ -106,6 +113,16 @@ export default function ChatFono() {
       clearTimeout(digitandoTimeoutRef.current);
     };
   }, [usuario, atendimentoId]);
+
+  useEffect(() => {
+    if (mensagens.length > quantidadeMensagensAnteriorRef.current) {
+      mensagensContainerRef.current?.scrollTo({
+        top: mensagensContainerRef.current.scrollHeight,
+        behavior: 'smooth',
+      });
+    }
+    quantidadeMensagensAnteriorRef.current = mensagens.length;
+  }, [mensagens]);
 
   // Assim que souber que o atendimento está encerrado, busca a avaliação
   // (se existir e estiver visível pra esse usuário)
@@ -421,7 +438,7 @@ export default function ChatFono() {
         </div>
 
         {/* ÁREA DE MENSAGENS */}
-        <div className="flex-1 bg-slate-100/70 border-x border-slate-200 p-4 overflow-y-auto max-h-[550px] min-h-[380px] space-y-4">
+        <div ref={mensagensContainerRef} className="flex-1 bg-slate-100/70 border-x border-slate-200 p-4 overflow-y-auto max-h-[550px] min-h-[380px] space-y-4">
           {mensagens.length === 0 ? (
             <div className="text-center py-12 text-slate-400 text-xs">
               <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-40" />
