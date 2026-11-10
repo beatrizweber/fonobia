@@ -11,7 +11,7 @@ const EQUIPE = { nome: 'Interlagos Escuderia', logoUrl: '/patrocinadores/equipe-
 function CartaoLogo({ patrocinador }) {
   if (!patrocinador) {
     return (
-      <div className="h-48 w-full rounded-xl bg-white border border-dashed border-slate-300 shadow-sm flex items-center justify-center text-sm text-slate-300 font-semibold">
+      <div className="h-24 w-full rounded-xl bg-white border border-dashed border-slate-300 shadow-sm flex items-center justify-center text-sm text-slate-300 font-semibold">
         Logo aqui
       </div>
     );
@@ -21,16 +21,16 @@ function CartaoLogo({ patrocinador }) {
       href={patrocinador.url || '#'}
       target="_blank"
       rel="noopener noreferrer"
-      className="h-48 w-full px-4 py-3 rounded-xl bg-white border border-slate-200 shadow-sm flex items-center justify-center hover:shadow-md transition-shadow"
+      className="h-24 w-full px-3 py-2 rounded-xl bg-white border border-slate-200 shadow-sm flex items-center justify-center hover:shadow-md transition-shadow"
       title={patrocinador.nome}
     >
       {/* h-full + w-full + object-contain: a logo cresce até preencher o
-          espaço já com a margem do px-4/py-3 acima (é esse padding do CARD
-          que controla o tamanho da logo — menos padding = logo maior),
-          mas NUNCA estoura nem corta, seja ela bem quadrada (sobra margem
-          nas laterais) ou bem larga tipo a HostGator (sobra margem em
-          cima/embaixo). Nada de scale/overflow-hidden, então nunca corta
-          nenhuma borda de nenhuma proporção de logo. */}
+          espaço já com a margem do px-3/py-2 acima (é esse padding do CARD
+          que controla o tamanho da logo — menos padding = logo maior).
+          O card agora é baixo e largo (h-24) de propósito — as logos reais
+          (HostGator, equipe) são bem retangulares, então um card quadrado
+          como antes (h-48) sobrava muito espaço vazio em cima/embaixo.
+          Nada de scale/overflow-hidden, então nunca corta nenhuma borda. */}
       <img src={patrocinador.logoUrl} alt={patrocinador.nome} className="h-full w-full object-contain" />
     </a>
   );
