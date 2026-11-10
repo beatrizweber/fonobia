@@ -75,11 +75,58 @@ De forma geral, esses dados são utilizados para: prestar o serviço de forma ef
   },
   {
     titulo: '6. Segurança dos dados',
-    texto: 'FAZER TEXTO',
+    texto: `Levamos a proteção dos seus dados a sério e adotamos medidas técnicas e organizacionais para reduzir os riscos de acesso não autorizado, perda ou uso indevido das suas informações. Entre as medidas que usamos:
+
+• Senhas nunca são armazenadas em texto puro — usamos um algoritmo de hash criptográfico (bcrypt) que torna a senha original irrecuperável, mesmo por nós.
+• O acesso à plataforma é protegido por autenticação (login com e-mail e senha) e cada conta só enxerga as informações que lhe dizem respeito, de acordo com seu perfil (paciente, voluntário ou administrador).
+• Tentativas repetidas de login são automaticamente bloqueadas por um tempo, como proteção contra tentativas de invasão.
+• O cadastro de voluntários (fonoaudiólogos e estagiários) passa por uma análise manual antes da liberação, e o histórico de aprovações/recusas é registrado para fins de auditoria interna.
+• O acesso ao painel administrativo é restrito a um número reduzido de pessoas responsáveis pelo projeto.
+
+Você tem controle sobre os seus próprios dados: a qualquer momento, na sua página de Perfil, é possível baixar uma cópia de tudo o que guardamos sobre você ou solicitar a exclusão da sua conta. Ao excluir a conta, seus dados de identificação (nome, e-mail) são removidos e substituídos por um registro anônimo — o histórico de atendimentos já realizados é mantido de forma despersonalizada, pois também pertence à outra pessoa envolvida na conversa (paciente ou voluntário), mas deixa de te identificar.
+
+Nenhum sistema é 100% imune a falhas. Caso identifiquemos um incidente de segurança que possa gerar risco ou dano relevante aos seus dados, iremos comunicar às pessoas afetadas e à Autoridade Nacional de Proteção de Dados (ANPD), conforme exige a LGPD, informando o que aconteceu e quais medidas estão sendo tomadas.
+
+Por ser um projeto desenvolvido por estudantes no contexto de uma competição escolar (STEM Racing – SESI SENAI), reforçamos: fazemos o nosso melhor dentro do conhecimento técnico que temos, mas não somos uma empresa com estrutura de segurança de nível corporativo. Evite compartilhar, pelo chat, informações mais sensíveis do que o necessário para o seu atendimento (como dados bancários, senhas de outros serviços, etc.).
+`,
   },
   {
     titulo: '7. Termos de Uso da Plataforma',
-    texto: 'FAZER TEXTO',
+    texto: `Ao criar uma conta no AjudaÁudio, você concorda com os termos abaixo.
+
+O que é o AjudaÁudio
+Somos um projeto social desenvolvido por estudantes da SESI SENAI Interlagos para a competição STEM Racing. A plataforma conecta pessoas que usam aparelho auditivo (incluindo modelos recebidos pelo SUS) a fonoaudiólogos e estagiários de fonoaudiologia voluntários, para tirar dúvidas sobre uso, manutenção e cuidados com o aparelho.
+
+Isso NÃO é um serviço de telemedicina nem substitui uma consulta profissional presencial. As orientações recebidas pelo chat (seja da assistente virtual Zélia, seja de um voluntário humano) têm caráter informativo e não constituem diagnóstico, receita ou tratamento clínico. Em caso de emergência ou piora dos sintomas, procure uma unidade de saúde.
+
+Cadastro e conta
+Você deve fornecer informações verdadeiras no cadastro. Fonoaudiólogos e estagiários devem informar corretamente seu registro profissional (CRFa) ou comprovante de vínculo acadêmico — essas informações passam por uma checagem manual da administração antes da liberação da conta, mas o AjudaÁudio não substitui a verificação oficial feita pelos conselhos profissionais; a responsabilidade pela veracidade das informações prestadas é de quem se cadastra.
+
+Você é responsável por manter sua senha em sigilo e por tudo o que acontecer na sua conta. Avise a administração se suspeitar de acesso indevido.
+
+Regras de uso
+Ao usar a plataforma, você concorda em não:
+• fornecer informações falsas sobre si ou sobre sua formação profissional;
+• usar o chat para fins diferentes de orientação sobre aparelhos auditivos (spam, assédio, conteúdo ofensivo, discriminatório ou ilegal);
+• tentar acessar contas, dados ou áreas do sistema que não sejam seus;
+• enviar, pelo recurso de anexos, arquivos que não sejam fotos/vídeos relacionados ao seu atendimento.
+
+O uso indevido pode levar à suspensão ou exclusão da conta pela administração, a qualquer momento, sem aviso prévio em casos graves.
+
+Conteúdo enviado
+As mensagens, fotos e vídeos que você envia no chat continuam sendo seus, mas você autoriza que fiquem armazenados na plataforma como parte do histórico daquele atendimento, visível para a outra pessoa envolvida na conversa e para a administração (para fins de moderação e suporte).
+
+Disponibilidade do serviço
+Por ser um projeto escolar, mantido voluntariamente por estudantes, não garantimos disponibilidade contínua, ausência de erros, ou que o serviço continuará existindo indefinidamente. Podemos alterar, suspender ou encerrar funcionalidades a qualquer momento.
+
+Limitação de responsabilidade
+O AjudaÁudio é um espaço de conexão e orientação geral. Não nos responsabilizamos por decisões clínicas tomadas com base nas conversas do chat, nem pela conduta de voluntários fora do âmbito da orientação básica — o vínculo de responsabilidade profissional (ética, técnica) é sempre entre o voluntário e seus respectivos conselhos/instituições de ensino.
+
+Alterações nestes termos
+Podemos atualizar estes Termos de Uso e a Política de Privacidade conforme o projeto evolui. Alterações relevantes serão sinalizadas nesta página, com a data da última atualização.
+
+Este projeto é regido pelas leis brasileiras, incluindo a Lei Geral de Proteção de Dados (Lei nº 13.709/2018).
+`,
   },
   {
     titulo: '8. Isenção de responsabilidade médica',
