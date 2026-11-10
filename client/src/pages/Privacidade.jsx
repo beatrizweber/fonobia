@@ -35,7 +35,16 @@ Caso o beneficiário seja menor de 18 anos, a coleta de seus dados pessoais e se
   },
   {
     titulo: '3. Como usamos os seus dados',
-    texto: 'FAZER TEXTO',
+    texto: `Utilizamos os dados coletados para as seguintes finalidades:`,
+    itens: [
+      'Nome, e-mail e senha do beneficiário: utilizados para criar, autenticar e gerenciar a conta no site.',
+      'Data de nascimento: confirmar a identidade do beneficiário e, quando aplicável, identificar a necessidade de consentimento do responsável legal.',
+      'Número do cartão do SUS: identificar o beneficiário e vincular seu cadastro ao atendimento prestado pelo Sistema Único de Saúde.',
+      'Modelo do aparelho e lado de uso: prestar o serviço de forma adequada às necessidades auditivas do beneficiário, incluindo suporte técnico e acompanhamento.',
+    ],
+    textoApos: `Todos esses tratamentos estão de acordo com as normas da Lei Geral de Proteção de Dados (LGPD).
+
+De forma geral, esses dados são utilizados para: prestar o serviço de forma eficiente e segura, autenticar o acesso do beneficiário à sua conta, vincular o atendimento ao cadastro do beneficiário no SUS, garantir a segurança e a integridade das informações armazenadas e cumprir obrigações legais e regulatórias aplicáveis ao setor de saúde.`,
   },
   {
     titulo: '4. Com quem compartilhamos seus dados',
