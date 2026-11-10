@@ -6,9 +6,7 @@ import { Link } from 'react-router-dom';
 // precisa de import. Troque a "url" pelo site de cada patrocinador quando tiver.
 const HOSTGATOR = { nome: 'HostGator', logoUrl: '/patrocinadores/hostgator.svg', url: 'https://www.hostgator.com.br/' };
 
-// Logo da equipe AjudaÁudio — ainda não temos o arquivo. Quando chegar, troque
-// por algo como { nome: 'Equipe AjudaÁudio', logoUrl: '/patrocinadores/equipe.svg', url: '#' }
-const EQUIPE = null;
+const EQUIPE = { nome: 'Interlagos Escuderia', logoUrl: '/patrocinadores/equipe-interlagos.png', url: 'https://instagram.com/interlagos_escuderia' };
 
 function CartaoLogo({ patrocinador }) {
   if (!patrocinador) {
