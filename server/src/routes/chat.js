@@ -67,8 +67,8 @@ export async function chatRoutes(server, options) {
         }
 
         await pool.query(
-          `INSERT INTO mensagem (sessao_id, remetente, conteudo) VALUES ($1, 'paciente', $2)`,
-          [sessaoId, message]
+          `INSERT INTO mensagem (sessao_id, remetente, remetente_usuario_id, conteudo) VALUES ($1, 'paciente', $2, $3)`,
+          [sessaoId, usuario.id, message]
         );
       } else if (Array.isArray(historico)) {
         // Sem login: mantém contexto só com o que o próprio front já tem em tela.

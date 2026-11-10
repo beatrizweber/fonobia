@@ -133,6 +133,10 @@ CREATE TABLE mensagem (
     sessao_id       UUID                    NOT NULL REFERENCES sessao(id) ON DELETE CASCADE,
     -- CASCADE: apagar a sessão apaga todas as mensagens junto
     remetente       remetente_enum          NOT NULL,     -- 'paciente', 'ia' ou 'voluntario'
+    -- Quem de fato enviou (null pra 'ia'). O "remetente" acima é só o papel;
+    -- isso aqui identifica a pessoa, pra admin/múltiplos voluntários numa
+    -- mesma sessão nunca serem confundidos com o paciente/voluntário dela.
+    remetente_usuario_id UUID               REFERENCES usuario(id),
     tipo_conteudo   tipo_conteudo_enum      NOT NULL DEFAULT 'texto',
     conteudo        TEXT,                                 -- texto digitado ou transcrição do áudio
     audio_url       TEXT,                                 -- link do arquivo de áudio (URLs podem ser longas)

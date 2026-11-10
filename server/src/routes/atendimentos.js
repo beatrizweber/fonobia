@@ -107,9 +107,9 @@ export async function atendimentosRoutes(server, options) {
       const sessao = resSessao.rows[0];
 
       await client.query(
-        `INSERT INTO mensagem (sessao_id, remetente, conteudo)
-         VALUES ($1, 'paciente', $2)`,
-        [sessao.id, mensagem]
+        `INSERT INTO mensagem (sessao_id, remetente, remetente_usuario_id, conteudo)
+         VALUES ($1, 'paciente', $2, $3)`,
+        [sessao.id, paciente_id, mensagem]
       );
 
       await client.query('COMMIT');
@@ -326,20 +326,10 @@ export async function atendimentosRoutes(server, options) {
            m.arquivo_url,
            m.enviado_em AS criado_em,
            m.lido_em,
-           CASE m.remetente
-             WHEN 'paciente' THEN s.paciente_id
-             WHEN 'voluntario' THEN s.voluntario_id
-             ELSE NULL
-           END AS remetente_id,
-           CASE m.remetente
-             WHEN 'paciente' THEN up.nome
-             WHEN 'voluntario' THEN uv.nome
-             ELSE 'Assistente Virtual'
-           END AS nome_remetente
+           m.remetente_usuario_id AS remetente_id,
+           COALESCE(ru.nome, CASE WHEN m.remetente = 'ia' THEN 'Assistente Virtual' ELSE 'Desconhecido' END) AS nome_remetente
          FROM mensagem m
-         JOIN sessao s ON s.id = m.sessao_id
-         LEFT JOIN usuario up ON up.id = s.paciente_id
-         LEFT JOIN usuario uv ON uv.id = s.voluntario_id
+         LEFT JOIN usuario ru ON ru.id = m.remetente_usuario_id
          WHERE m.sessao_id = $1
          ORDER BY m.enviado_em ASC`,
         [id]
@@ -375,10 +365,10 @@ export async function atendimentosRoutes(server, options) {
       const remetente = mapTipoParaRemetente(request.usuario.tipo);
 
       const result = await pool.query(
-        `INSERT INTO mensagem (sessao_id, remetente, conteudo)
-         VALUES ($1, $2, $3)
-         RETURNING id, remetente, tipo_conteudo, conteudo, arquivo_url, enviado_em AS criado_em, lido_em`,
-        [id, remetente, conteudo]
+        `INSERT INTO mensagem (sessao_id, remetente, remetente_usuario_id, conteudo)
+         VALUES ($1, $2, $3, $4)
+         RETURNING id, remetente, remetente_usuario_id AS remetente_id, tipo_conteudo, conteudo, arquivo_url, enviado_em AS criado_em, lido_em`,
+        [id, remetente, request.usuario.id, conteudo]
       );
 
       broadcast(id, { tipo: 'mensagem', mensagem: result.rows[0] });
@@ -403,13 +393,14 @@ export async function atendimentosRoutes(server, options) {
         return reply.status(403).send({ error: 'Você não faz parte deste atendimento.' });
       }
 
-      const remetenteProprio = mapTipoParaRemetente(request.usuario.tipo);
-
+      // Marca como lida qualquer mensagem que não seja minha — usar a pessoa
+      // de verdade (não o papel) evita marcar como "já lida por mim" uma
+      // mensagem que EU mesmo mandei como admin, por exemplo.
       const result = await pool.query(
         `UPDATE mensagem SET lido_em = now()
-         WHERE sessao_id = $1 AND remetente != $2 AND lido_em IS NULL
+         WHERE sessao_id = $1 AND remetente_usuario_id IS DISTINCT FROM $2 AND lido_em IS NULL
          RETURNING id`,
-        [id, remetenteProprio]
+        [id, request.usuario.id]
       );
 
       if (result.rows.length > 0) {
@@ -464,10 +455,10 @@ export async function atendimentosRoutes(server, options) {
       const arquivoUrl = `/uploads/${nomeArquivo}`;
 
       const result = await pool.query(
-        `INSERT INTO mensagem (sessao_id, remetente, tipo_conteudo, arquivo_url)
-         VALUES ($1, $2, $3, $4)
-         RETURNING id, remetente, tipo_conteudo, conteudo, arquivo_url, enviado_em AS criado_em, lido_em`,
-        [id, remetente, tipoConteudo, arquivoUrl]
+        `INSERT INTO mensagem (sessao_id, remetente, remetente_usuario_id, tipo_conteudo, arquivo_url)
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING id, remetente, remetente_usuario_id AS remetente_id, tipo_conteudo, conteudo, arquivo_url, enviado_em AS criado_em, lido_em`,
+        [id, remetente, request.usuario.id, tipoConteudo, arquivoUrl]
       );
 
       broadcast(id, { tipo: 'mensagem', mensagem: result.rows[0] });
