@@ -31,7 +31,7 @@ export default function Admin() {
         const data = await response.json();
 
         if (response.ok) {
-          setUsuarios(data);
+          if (Array.isArray(data)) setUsuarios(data);
         } else {
           setErro(data.error || 'Erro ao carregar usuários.');
         }

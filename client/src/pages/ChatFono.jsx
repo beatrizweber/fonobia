@@ -176,8 +176,10 @@ export default function ChatFono() {
       });
       if (resMsg.ok) {
         const dataMsg = await resMsg.json();
-        setMensagens(dataMsg);
-        marcarComoLidas();
+        if (Array.isArray(dataMsg)) {
+          setMensagens(dataMsg);
+          marcarComoLidas();
+        }
       }
     } catch (err) {
       console.error('Erro ao atualizar mensagens:', err);

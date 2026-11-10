@@ -44,7 +44,7 @@ export default function Atendimento() {
       });
       if (response.ok) {
         const data = await response.json();
-        setChamados(data);
+        if (Array.isArray(data)) setChamados(data);
       }
     } catch (err) {
       console.error('Erro ao buscar solicitações:', err);

@@ -74,7 +74,7 @@ export default function FonoDashboard() {
       });
       if (response.ok) {
         const data = await response.json();
-        setAtendimentos(data);
+        if (Array.isArray(data)) setAtendimentos(data);
       }
     } catch (err) {
       console.error('Erro ao buscar fila de atendimentos:', err);

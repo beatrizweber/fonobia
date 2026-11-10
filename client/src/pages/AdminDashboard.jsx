@@ -87,14 +87,24 @@ export default function AdminDashboard() {
         fetch(`${API_URL}/api/admin/logs`, { headers }),
       ]);
 
+      // Cada resposta só é aceita se vier 200 E for de fato um array — senão
+      // os .map()/.filter()/.reduce() que essas listas alimentam mais abaixo
+      // quebrariam a página inteira (tela branca) ao tentar iterar um objeto
+      // de erro tipo { error: "..." }. Isso é especialmente importante aqui
+      // porque, sem a checagem, um throw em QUALQUER uma delas (ex: nos
+      // chamados) é pego pelo catch de baixo e aborta o carregamento das
+      // OUTRAS listas também, mesmo que a resposta delas tenha vindo certa.
       if (resPendentes.ok) {
-        setVoluntariosPendentes(await resPendentes.json());
+        const dados = await resPendentes.json();
+        if (Array.isArray(dados)) setVoluntariosPendentes(dados);
       }
 
       if (resChamados.ok) {
         const chamados = await resChamados.json();
-        // A API usa "mensagem_inicial"; a tela exibe/filtra por "assunto"
-        setTodosChamados(chamados.map(c => ({ ...c, assunto: c.mensagem_inicial })));
+        if (Array.isArray(chamados)) {
+          // A API usa "mensagem_inicial"; a tela exibe/filtra por "assunto"
+          setTodosChamados(chamados.map(c => ({ ...c, assunto: c.mensagem_inicial })));
+        }
       }
 
       if (resMetricas.ok) {
@@ -102,11 +112,13 @@ export default function AdminDashboard() {
       }
 
       if (resAvaliacoes.ok) {
-        setAvaliacoes(await resAvaliacoes.json());
+        const dados = await resAvaliacoes.json();
+        if (Array.isArray(dados)) setAvaliacoes(dados);
       }
 
       if (resUsuarios.ok) {
-        setUsuarios(await resUsuarios.json());
+        const dados = await resUsuarios.json();
+        if (Array.isArray(dados)) setUsuarios(dados);
       }
 
       if (resSerie.ok) {
@@ -114,11 +126,13 @@ export default function AdminDashboard() {
       }
 
       if (resFaq.ok) {
-        setFaqCategorias(await resFaq.json());
+        const dados = await resFaq.json();
+        if (Array.isArray(dados)) setFaqCategorias(dados);
       }
 
       if (resLogs.ok) {
-        setLogsAuditoria(await resLogs.json());
+        const dados = await resLogs.json();
+        if (Array.isArray(dados)) setLogsAuditoria(dados);
       }
     } catch (err) {
       console.error('Erro ao carregar dados do painel administrativo:', err);
@@ -130,7 +144,10 @@ export default function AdminDashboard() {
   async function carregarFaq() {
     try {
       const res = await fetch(`${API_URL}/api/faq`);
-      if (res.ok) setFaqCategorias(await res.json());
+      if (res.ok) {
+        const dados = await res.json();
+        if (Array.isArray(dados)) setFaqCategorias(dados);
+      }
     } catch (err) {
       console.error('Erro ao recarregar FAQ:', err);
     }
