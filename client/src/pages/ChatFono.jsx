@@ -400,7 +400,11 @@ export default function ChatFono() {
 
             <div>
               <h1 className="text-base font-bold text-slate-800 flex items-center gap-2">
-                Atendimento #{atendimentoId}
+                {usuario?.tipo === 'paciente'
+                  ? 'Seu atendimento'
+                  : atendimento?.paciente_nome
+                  ? `Atendimento com ${atendimento.paciente_nome}`
+                  : `Atendimento #${atendimentoId}`}
               </h1>
               <p className="text-xs text-slate-500">
                 {isEncerrado
